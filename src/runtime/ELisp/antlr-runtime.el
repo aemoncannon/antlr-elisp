@@ -364,24 +364,91 @@
 
 (defmacro parser-bitset (name bitsets)
   `(puthash ',name 
-	    (create-bitset ',bitsets)
+	    (make-bitset :bits ',bitsets)
 	    (antlr-parser-bitsets current-parser)))
+
+
 
 (defstruct bitset
   "An Antlr bitset"
-  bits)
+  (bits (make-vector 1 0)))
 
-(defun create-bitset (bitsets)
-  (make-bitset :bits bitsets))
+(defconst *bitset-word-size* 29)
+(defconst *bitset-mod-mask* (- *bitset-word-size* 1))
 
-(defun bitset-member (set i)
-  (throw "Not yet implemented"))
+(defun bitset-member (set el)
+  (if (< el 0) nil
+    (let ((n (bitset-word-number el)))
+      (if (>= n (bitset-word-len set)) nil
+	(/= (logand (bitset-word-at set n) (bitset-bitmask el)) 0)))))
 
-(defun bitset-or-in-place (set other-set)
-  (throw "Not yet implemented"))
+(defun bitset-or-in-place (set a)
+  (unless (null a)
 
-(defun bitset-remove (set i)
-  (throw "Not yet implemented"))
+    ;;If this is smaller than a, grow this first
+    (if (> (bitset-word-len a) (bitset-word-len set))
+	(bitset-set-size set (bitset-word-len a)))
+
+    (let ((m (min (bitset-word-len set) 
+		  (bitset-word-len a)))
+	  (i -1))
+      (setf i (- m 1))
+      (while (>= i 0)
+	(aset (bitset-bits set) i
+	      (logior (bitset-word-at set i) 
+		      (bitset-word-at a i)))
+	(decf i))
+      )))
+
+(defun bitset-add (set el)
+  (let ((n (bitset-word-number el)))
+    (if (>= n (bitset-word-len set))
+	(bitset-grow-to-include set el))
+    (aset (bitset-bits set) n
+	  (logior (bitset-word-at set n) 
+		  (bitset-bitmask el)))
+    ))
+
+(defun bitset-remove (set el)
+  (let ((n (bitset-word-number el)))
+    (if (< n (bitset-word-len set))
+	(aset (bitset-bits set) n 
+	      (logand (bitset-word-at set n) (lognot (bitset-bitmask el)))))))
+
+(defun bitset-bitmask (el)
+  (lsh 1 (logand el *bitset-mod-mask*)))
+
+(defun bitset-word-number (el)
+  (/ el *bitset-word-size*))
+
+(defun bitset-word-len (set)
+  (length (bitset-bits set)))
+
+(defun bitset-word-at (set n)
+  (aref (bitset-bits set) n))
+
+(defun bitset-set-size (set nwords)
+  "Sets the size of a set.
+   @param nwords how many words the new set should be"
+  (let* ((n (min nwords (bitset-word-len set)))
+	 (growth (- n (bitset-word-len set)))
+	 (newbits (vconcat (bitset-bits set) (make-vector growth 0))))
+    (setf (bitset-bits set) newbits)))
+
+(defun bitset-grow-to-include (set bit)
+  "Grows the set to a larger number of bits.
+   @param bit element that must fit in set"
+  (let* ((new-size (max (lsh (bitset-word-len set) 1)
+			(bitset-num-words-to-hold bit)))
+	 (growth (- new-size (bitset-word-len set)))
+	 (newbits (vconcat (bitset-bits set) (make-vector growth 0))))
+    (setf (bitset-bits set) newbits)))
+
+(defun bitset-num-words-to-hold (el)
+  (+ (/ el *bitset-word-size*) 1))
+
+
+
 
 
 (defstruct antlr-parser-context
@@ -648,7 +715,7 @@
 
 (defun parser-combine-follows (exact)
   (let ((top (antlr-parser-context-fsp context))
-	(follow-set (create-bitset)))
+	(follow-set (make-bitset)))
     (let ((i top))
       (catch 'break
 	(while (>= i 0)
