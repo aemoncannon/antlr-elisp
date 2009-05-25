@@ -59,6 +59,7 @@
   input
   type
   channel
+  (index -1)
   (start -1)
   (stop -1)
   line
@@ -80,7 +81,7 @@
 (defun lexer-input-LA (n)
   (let ((at (+ (point) (- n 1))))
     (if (= at (point-max))
-      -1
+	-1
       (char-after at))))
   
 (defun lexer-input-consume ()
@@ -158,15 +159,15 @@
 
 (defun lexer-token-text (token)
   (cond
-    ((not (null (common-token-text token))) 
-     common-token-text token)
-    ((not (null (common-token-input token)))
-     (let ((text (with-current-buffer (common-token-input token)
-                   (buffer-substring (common-token-start token) 
-                                     (common-token-stop token)))))
-       (setf (common-token-text token) text)
-       text))
-    (t nil)))
+   ((not (null (common-token-text token))) 
+    common-token-text token)
+   ((not (null (common-token-input token)))
+    (let ((text (with-current-buffer (common-token-input token)
+		  (buffer-substring (common-token-start token) 
+				    (common-token-stop token)))))
+      (setf (common-token-text token) text)
+      text))
+   (t nil)))
 
 (defconst *antlr-token-eof-token* (make-common-token :type -1 :channel 0))
 (defconst *antlr-token-invalid-token* (make-common-token :type *antlr-token-invalid-token-type* :channel 0))
@@ -203,7 +204,7 @@
 
 (defmacro lexer-call-rule (name)
   `(progn 
-     ;(message (concat "calling rule " (format "%s" ',name))) 
+					;(message (concat "calling rule " (format "%s" ',name))) 
      (funcall (gethash ',name (antlr-lexer-rules (antlr-lexer-context-lexer context))) context)))
 
 (defmacro lexer-token-id (name)
@@ -213,25 +214,30 @@
   `(puthash ',name ,value 
             (if (boundp 'current-lexer) 
                 (antlr-lexer-tokens current-lexer) 
-                (antlr-parser-tokens current-parser))))
+	      (antlr-parser-tokens current-parser))))
 
 (defmacro defrule (name params &rest body)
   (let ((tokens (if (boundp 'current-lexer)
                     (antlr-lexer-tokens current-lexer)
-                    (antlr-parser-tokens current-parser)))
+		  (antlr-parser-tokens current-parser)))
+	(bitsets (if (boundp 'current-parser)
+		     (antlr-parser-bitsets current-parser)))
         (current-buffer (if (boundp 'current-lexer)
                             '(antlr-lexer-context-input context)
-                            '(antlr-lexer-context-input (antlr-parser-context-input context))))
-        (result '()))
+			  '(antlr-lexer-context-input (antlr-parser-context-input context))))
+        (let-bindings '()))
     (maphash (lambda (key value)
-               (setq result (cons (list key value) result))) tokens)
+               (setq let-bindings (cons (list key value) let-bindings))) tokens)
+    (if bitsets
+	(maphash (lambda (key value)
+		   (setq let-bindings (cons (list key value) let-bindings))) bitsets))
     `(puthash ',name (lambda (context ,@params) 
                        (with-current-buffer ,current-buffer
-                         (let (,@result)
+                         (let (,@let-bindings)
                            ,@body)))
               (if (boundp 'current-lexer) 
                   (antlr-lexer-rules current-lexer) 
-                  (antlr-parser-rules current-parser)))))
+		(antlr-parser-rules current-parser)))))
 
 (defmacro lexer-match-range (a b)
   (let ((la (lexer-input-LA 1)))
@@ -242,20 +248,20 @@
 
 (defmacro lexer-match (s)
   (cond
-    ((numberp s) 
-     `(if (= (lexer-input-LA 1) ,s)
-          (goto-char (+ (point) 1))
-          (signal 'mismatched-token (list ,(char-to-string s) context))))
-    ((stringp s) 
-     `(let ((i 0)
-            (str ,s))
-        (while (< i (length str))
-          (unless (= (lexer-input-LA 1) (elt str i))
-            (signal 'mismatched-token (list (point) (char-to-string (lexer-input-LA 1)) (lexer-input-LA 1) (char-to-string (elt str i)) (elt str i) str context)))
-          (incf i)
-          (lexer-input-consume)
-          (setf (antlr-lexer-context-failed context) nil))))
-    (t (signal 'error "Implement t case"))))
+   ((numberp s) 
+    `(if (= (lexer-input-LA 1) ,s)
+	 (goto-char (+ (point) 1))
+       (signal 'mismatched-token (list ,(char-to-string s) context))))
+   ((stringp s) 
+    `(let ((i 0)
+	   (str ,s))
+       (while (< i (length str))
+	 (unless (= (lexer-input-LA 1) (elt str i))
+	   (signal 'mismatched-token (list (point) (char-to-string (lexer-input-LA 1)) (lexer-input-LA 1) (char-to-string (elt str i)) (elt str i) str context)))
+	 (incf i)
+	 (lexer-input-consume)
+	 (setf (antlr-lexer-context-failed context) nil))))
+   (t (signal 'error "Implement t case"))))
 
 (defmacro with-lexer (name &rest body)
   `(progn 
@@ -298,37 +304,41 @@
     (save-excursion
       (with-current-buffer (antlr-lexer-context-input context)
         (goto-char (antlr-lexer-context-input-start context))
-            (setf (antlr-lexer-context-token context) nil
-                  (antlr-lexer-context-channel context) *antlr-token-default-channel*
-                  (antlr-lexer-context-token-start-char-index context) (point)
-                  (antlr-lexer-context-token-start-char-position-in-line context) (current-column)
-                  (antlr-lexer-context-token-start-line context) (line-number-at-pos)
-                  (antlr-lexer-context-text context) nil)))
+	(setf (antlr-lexer-context-token context) nil
+	      (antlr-lexer-context-channel context) *antlr-token-default-channel*
+	      (antlr-lexer-context-token-start-char-index context) (point)
+	      (antlr-lexer-context-token-start-char-position-in-line context) (current-column)
+	      (antlr-lexer-context-token-start-line context) (line-number-at-pos)
+	      (antlr-lexer-context-text context) nil)))
     context))
 
 (defun lex-buffer (lexer-name method buffer start end)
   (let ((context (lexer-for-buffer lexer-name buffer start end)))
-    (save-excursion
-      (with-current-buffer (antlr-lexer-context-input context)
-        (catch 'at-end
-          (while t
-            (setf (antlr-lexer-context-token context) nil
-                  (antlr-lexer-context-channel context) *antlr-token-default-channel*
-                  (antlr-lexer-context-token-start-char-index context) (point)
-                  (antlr-lexer-context-token-start-char-position-in-line context) (current-column)
-                  (antlr-lexer-context-token-start-line context) (line-number-at-pos)
-                  (antlr-lexer-context-text context) nil)
-            (when (= (point) (point-max))
-              (funcall method *antlr-token-eof-token*)
-              (throw 'at-end nil))
-            (condition-case nil
-                (progn
-                  (funcall (gethash 'Tokens (antlr-lexer-rules (antlr-lexer-context-lexer context))) context)
-                  (when (null (antlr-lexer-context-token context))
-                    (lex-emit-token))
-                  (unless (eq (antlr-lexer-context-token context) *antlr-token-skip-token*)
-                    (funcall method (antlr-lexer-context-token context))))
-              (message "TODO handling error here"))))))))
+    (lex-with-lexer context method)))
+
+(defun lex-with-lexer (context method)
+  (save-excursion
+    (with-current-buffer (antlr-lexer-context-input context)
+      (catch 'at-end
+	(while t
+	  (setf (antlr-lexer-context-token context) nil
+		(antlr-lexer-context-channel context) *antlr-token-default-channel*
+		(antlr-lexer-context-token-start-char-index context) (point)
+		(antlr-lexer-context-token-start-char-position-in-line context) (current-column)
+		(antlr-lexer-context-token-start-line context) (line-number-at-pos)
+		(antlr-lexer-context-text context) nil)
+	  (when (= (point) (point-max))
+	    (funcall method *antlr-token-eof-token*)
+	    (throw 'at-end nil))
+	  (condition-case nil
+	      (progn
+		(funcall (gethash 'Tokens (antlr-lexer-rules (antlr-lexer-context-lexer context))) context)
+		(when (null (antlr-lexer-context-token context))
+		  (lex-emit-token))
+		(unless (eq (antlr-lexer-context-token context) *antlr-token-skip-token*)
+		  (funcall method (antlr-lexer-context-token context))))
+	    (message "TODO handling error here")))))))
+  
 
 (defstruct antlr-parser
   "An Antlr parser"
@@ -337,7 +347,8 @@
   (tokens (make-hash-table))
   (rules (make-hash-table))
   (bitsets (make-hash-table))
-)
+  )
+
 
 (defmacro with-parser (name &rest body)
   `(progn 
@@ -351,8 +362,8 @@
 
 (defmacro parser-bitset (name bitsets)
   `(puthash ',name 
-            (create-bitset ',bitsets)
-            (antlr-parser-bitsets current-parser)))
+	    (create-bitset ',bitsets)
+	    (antlr-parser-bitsets current-parser)))
 
 (defstruct bitset
   "An Antlr bitset"
@@ -361,47 +372,210 @@
 (defun create-bitset (bitsets)
   (make-bitset :bits bitsets))
 
+
+
 (defstruct antlr-parser-context
   "An instance of a running parser"
   input
   parser
   (fsp -1)
   (following (make-vector 100 nil))
+  (token-buffer (make-vector 100 nil))
+  (pos -1)
+  (channel *antlr-token-default-channel*)
+  (discard-off-channel-tokens nil)
+  (backtracking 0)
+  (failed nil)
   )
+
+
+(defun parser-input-LA (k)
+  (common-token-type (parser-input-LT k)))
+
+
+(defun parser-input-LT (k)
+  "Get the ith token from the current position 1..n where k=1 is the first symbol of lookahead."
+  (catch 'return
+    (if (= (antlr-parser-context-pos context) -1) (fill-buffer))
+    (if (= k 0) (throw 'return nil))
+    (if (< k 0) (throw 'return (parser-input-LB (- k))))
+    (if (>= (+ (antlr-parser-context-pos context) k (- 1)) (length (antlr-parser-context-token-buffer context)))
+	(throw 'return *antlr-token-eof-token*))
+    (let ((i (antlr-parser-context-pos context))
+	  (n 1))
+      (while (< n k)
+	;;skip off-channel tokens
+	(setf i (skip-off-token-channels (+ i 1)))
+	(incf n)
+	)
+      (let ((token-buffer (antlr-parser-context-token-buffer context)))
+	(if (>= i (length token-buffer))
+	    (throw 'return *antlr-token-eof-token*))
+	(aref token-buffer i))
+      )))
+
+
+(defun parser-input-LB (k)
+  "Look backwards k tokens on-channel tokens"
+  (throw "Not implemented!")
+  )
+
+
+(defun parser-match (ttype follow)
+  "Match current input symbol against ttype.  Upon error, do one token
+  insertion or deletion if possible.  You can override to not recover
+  here and bail out of the current production to the normal error
+  exception catch (at the end of the method) by just throwing
+  MismatchedTokenException upon input.LA(1)!=ttype."
+  (cond 
+
+   ((eql (parser-input-LA 1) ttype)
+    (progn
+      (parser-consume)
+      ;;TODO: errorRecovery = false
+      (setf (antlr-parser-context-failed context) nil)))
+
+   ((> (antlr-parser-context-backtracking 0))
+    (setf (antlr-parser-context-failed context) t))
+
+   (t (parser-mismatch(ttype, follow)))))
+
+
+(defun parser-mismatch (ttype follow)
+  "Factor out what to do upon token mismatch so tree parsers can behave
+   differently.  Override this method in your parser to do things
+   like bailing out after the first error; just throw the mte object
+   instead of calling the recovery method."
+  (signal 'mismatched-token (list ttype context))
+  ;; TODO: recoverFromMismatchedToken(input, mte, ttype, follow)	;
+  )
+
+
+(defmacro parser-consume ()
+  "Move the input pointer to the next incoming token.  The stream
+   must become active with LT(1) available.  consume() simply
+   moves the input pointer so that LT(1) points at the next
+   input symbol. Consume at least one token.
+   Walk past any token not on the channel the parser is listening to."
+  (if (< (antlr-parser-context-pos context) 
+	 (length (antlr-parser-context-token-buffer context)))
+      (progn
+	(incf (antlr-parser-context-pos context))
+	;; leave p on valid token
+	(setf (antlr-parser-context-pos context) 
+	      (skip-off-token-channels (antlr-parser-context-pos context))))))
+
+
+
+(defun fill-buffer ()
+  "Load all tokens from the token source and put in token-buffer.
+   This is done upon first LT request because you might want to
+   set some token type / channel overrides before filling buffer."
+  (let* ((lexer-context (antlr-parser-context-input context))
+	 (index 0)
+	 (tokens nil))
+    (lex-with-lexer 
+     lexer-context 
+     #'(lambda (token) 
+	 (if (and token (/= (common-token-type token) -1))
+	     (progn
+	       ;;boolean discard = false;
+	       ;;// is there a channel override for token type?
+	       ;;if ( channelOverrideMap!=null ) {
+	       ;;	Integer channelI = (Integer)
+	       ;;		channelOverrideMap.get(new Integer(t.getType()));
+	       ;;	if ( channelI!=null ) {
+	       ;;		t.setChannel(channelI.intValue());
+	       ;;	}
+	       ;;}
+	       ;;if ( discardSet!=null &&
+	       ;;	 discardSet.contains(new Integer(t.getType())) )
+	       ;;{
+	       ;;	discard = true;
+	       ;;}
+	       ;;else if ( discardOffChannelTokens && t.getChannel()!=this.channel ) {
+	       ;;	discard = true;
+	       ;;}
+	       ;;if ( !discard )	{
+	       (setf (common-token-index token) index)
+
+	       ;;TODO This could be better..
+	       (setf tokens (cons token tokens))
+
+	       (incf index)
+	       ))))
+    (setf (antlr-parser-context-token-buffer context) (vconcat (reverse tokens)))
+    (setf (antlr-parser-context-pos context) 0)
+    (setf (antlr-parser-context-pos context) (skip-off-token-channels 0))
+    ))
+
+
+
+(defun skip-off-token-channels (i)
+  "Given a starting index, return the index of the first on-channel token."
+  (let* ((token-buffer (antlr-parser-context-token-buffer context))
+	 (channel (antlr-parser-context-channel context))
+	 (n (length token-buffer)))
+    (while (and (< i n) (/= (common-token-channel (aref token-buffer i)) channel))
+      (incf i))
+    i))
+
 
 (defun buffer-from-string (str)
   (let ((buffer (generate-new-buffer (generate-new-buffer-name "*antlr string lexing*"))))
     (save-excursion
       (with-current-buffer buffer
-        (insert str)
-        (goto-char (point-min))
-        (set-buffer-modified-p nil)))
+	(insert str)
+	(goto-char (point-min))
+	(set-buffer-modified-p nil)))
     buffer))
 
 (defun parse-string (lname pname start-rule str) 
   (let* ((buffer  (buffer-from-string str))
-         (context (make-antlr-parser-context 
-                   :input (lexer-for-buffer lname buffer 0 (buffer-size buffer))
-                   :parser (gethash pname *antlr-runtime-parsers*))))
+	 (context (make-antlr-parser-context 
+		   :input (lexer-for-buffer lname buffer 0 (buffer-size buffer))
+		   :parser (gethash pname *antlr-runtime-parsers*))))
     (funcall (gethash start-rule (antlr-parser-rules (antlr-parser-context-parser context))) context)))
 
 (defmacro parser-push-follow (rule-name)
   `(progn 
      (if (>= (+ (antlr-parser-context-fsp context) 1)
-             (length (antlr-parser-context-following context)))
-         (let ((f (vconcat (antlr-parser-context-following context) (make-vector (length (antlr-parser-context-following context)) nil))))
-           (setf (antlr-parser-context-following context) f)))
+	     (length (antlr-parser-context-following context)))
+	 (let ((f (vconcat (antlr-parser-context-following context) 
+			   (make-vector (length (antlr-parser-context-following context)) nil))))
+	   (setf (antlr-parser-context-following context) f)))
      (incf (antlr-parser-context-fsp context))
-     (aset (antlr-parser-context-following context) (antlr-parser-context-fsp context) (gethash ',rule-name (antlr-parser-bitsets (antlr-parser-context-parser context))))))
+     (aset (antlr-parser-context-following context) 
+	   (antlr-parser-context-fsp context) 
+	   (gethash ',rule-name (antlr-parser-bitsets (antlr-parser-context-parser context))))
+     ))
 
 (defmacro parser-call-rule (name)
   `(progn 
-     ;(message (concat "calling rule " (format "%s" ',name))) 
+     ;;(message (concat "calling rule " (format "%s" ',name))) 
      (funcall (gethash ',name (antlr-parser-rules (antlr-parser-context-parser context))) context)))
+
+
+(defmacro antlr-alt-case (expr-form &rest clauses)
+  "A case statement that doesn't quote the heads of its clauses."
+  ;; Compare the following:
+  ;; (message "%s" (macroexpand '(antlr-alt-case (+ 1 2) (5 1 3) (3 t) (2) (t nil))))
+  ;; (message "%s" (macroexpand '(case           (+ 1 2) (5 1 3) (3 t) (2) (t nil))))
+  (let ((val-sym (gensym)))
+    `(let ((,val-sym ,expr-form))
+       (cond ,@(mapcar (lambda (c)
+			 (let ((tail (cond 
+				      ((> (length (cdr c)) 0) (cdr c))
+				      (t (list (car c))))))
+			   (if (memq (car c) '(t otherwise))
+			       `(t ,@tail)
+			     `((eql ,val-sym ,(car c)) ,@tail))))
+		       clauses)))))
+
 
 (defun report-error (re)
   (signal (car re) (cdr re))
-)
+  )
 
 (provide 'antlr-runtime)
 ;;; antlr-runtime.el ends here

@@ -96,6 +96,8 @@ genericParser(grammar, name, scopes, tokens, tokenNames, rules, numRules,
 
     <tokens:{(deftoken <it.name> <it.type>)}; separator="\n">
     <scopes:{<if(it.isDynamicGlobalScope)><globalAttributeScope(scope=it)><endif>}>
+    <bitsets:bitset(name={FOLLOW_<it.name>_in_<it.inName><it.tokenIndex>},
+                    words64=it.bits)>
 
     <@members>
     (parser-initialization
@@ -114,8 +116,6 @@ genericParser(grammar, name, scopes, tokens, tokenNames, rules, numRules,
     <cyclicDFAs:{dfa | ;; FIXME(DFA:sAgain) <dfa.decisionNumber>}; separator="\n">
     <cyclicDFAs:cyclicDFA()> <! dump tables for all DFA !>
 
-    <bitsets:bitset(name={FOLLOW_<it.name>_in_<it.inName><it.tokenIndex>},
-                    words64=it.bits)>
 )
 >>
 
@@ -348,7 +348,7 @@ block(alts,decls,decision,enclosingBlockLevel,blockLevel,decisionNumber,maxK,max
   <decision>
   <@postdecision()>
   <@prebranch()>
-  (case alt<decisionNumber>
+  (antlr-alt-case alt<decisionNumber>
     <alts:altSwitchCase()>)
   <@postbranch()>)
 >>
@@ -361,7 +361,7 @@ ruleBlock(alts,decls,decision,enclosingBlockLevel,blockLevel,decisionNumber,maxK
   <@predecision()>
   <decision>
   <@postdecision()>
-  (case alt<decisionNumber>
+  (antlr-alt-case alt<decisionNumber>
     <alts:altSwitchCase()>))
 >>
 
@@ -394,7 +394,7 @@ positiveClosureBlock(alts,decls,decision,enclosingBlockLevel,blockLevel,decision
         <@predecision()>
         <decision>
         <@postdecision()>
-        (case alt<decisionNumber>
+        (antlr-alt-case alt<decisionNumber>
           <alts:altSwitchCase()>
           (otherwise
             (if (>= cnt<decisionNumber> 1)
@@ -419,7 +419,7 @@ closureBlock(alts,decls,decision,enclosingBlockLevel,blockLevel,decisionNumber,m
       <@predecision()>
       <decision>
       <@postdecision()>
-      (case alt<decisionNumber>
+      (antlr-alt-case alt<decisionNumber>
         <alts:altSwitchCase()>
         (otherwise
           (throw 'loop<decisionNumber> nil)))))
@@ -467,7 +467,7 @@ tokenRef(token,label,elementIndex) ::= <<
 <if(label)>
 (setq <label> (parser-input-LT 1))<\n>
 <endif>
-(parser-match input <token> FOLLOW_<token>_in_<ruleName><elementIndex>)
+(parser-match <token> FOLLOW_<token>_in_<ruleName><elementIndex>)
 <checkRuleBacktrackFailure()>
 >>
 
@@ -575,7 +575,8 @@ ruleRef(rule,label,elementIndex,args) ::= <<
 (parser-call-rule <rule> <args; separator=" ">)<\n>
 <endif>
 (decf (antlr-parser-context-fsp context))
-<checkRuleBacktrackFailure()>
+<checkRuleBacktrackFailure()><\n>
+nil
 >>
 
 /** ids+=r */
@@ -640,7 +641,7 @@ validateSemanticPredicate(pred,description) ::= <<
 // F i x e d  D F A  (if-then-else)
 
 dfaState(k,edges,eotPredictsAlt,description,stateNumber,semPredState) ::= <<
-(let ((LA<decisionNumber>_<stateNumber> (parser-input-LA <k>)))<\n>
+(let ((LA<decisionNumber>_<stateNumber> (<if(LEXER)>lexer-input-LA<else>parser-input-LA<endif> <k>)))<\n>
 <edges; separator="\n   ">
 (progn
 <if(eotPredictsAlt)>
@@ -708,14 +709,15 @@ dfaEdge(labelExpr, targetState, predicates) ::= <<
 
 // F i x e d  D F A  (switch case)
 
+
 /** A DFA state where a SWITCH may be generated.  The code generator
  *  decides if this is possible: CodeGenerator.canGenerateSwitch().
  */
 dfaStateSwitch(k,edges,eotPredictsAlt,description,stateNumber,semPredState) ::= <<
 <if(LEXER)>
-(case (lexer-input-LA <k>)
+(antlr-alt-case (lexer-input-LA <k>)
 <else>
-(case (parser-input-LA <k>)
+(antlr-alt-case (parser-input-LA <k>)
 <endif>
 <edges; separator="\n">
 (otherwise
@@ -733,9 +735,9 @@ dfaStateSwitch(k,edges,eotPredictsAlt,description,stateNumber,semPredState) ::= 
 
 dfaOptionalBlockStateSwitch(k,edges,eotPredictsAlt,description,stateNumber,semPredState) ::= <<
 <if(LEXER)>
-(case (lexer-input-LA <k>)
+(antlr-alt-case (lexer-input-LA <k>)
 <else>
-(case (parser-input-LA <k>)
+(antlr-alt-case (parser-input-LA <k>)
 <endif>
     <edges; separator="\n">
 )<\n>
@@ -743,9 +745,9 @@ dfaOptionalBlockStateSwitch(k,edges,eotPredictsAlt,description,stateNumber,semPr
 
 dfaLoopbackStateSwitch(k, edges,eotPredictsAlt,description,stateNumber,semPredState) ::= <<
 <if(LEXER)>
-(case (lexer-input-LA <k>)
+(antlr-alt-case (lexer-input-LA <k>)
 <else>
-(case (parser-input-LA <k>)
+(antlr-alt-case (parser-input-LA <k>)
 <endif>
 <edges; separator="\n"><\n>
 <if(eotPredictsAlt)>
@@ -776,6 +778,7 @@ dfaDecision(decisionNumber,description) ::= <<
  * encode/decode approach.  See analysis and runtime DFA for
  * the encoding methods.
  */
+
 cyclicDFA(dfa) ::= <<
 
 (defDFA DFA<dfa.decisionNumber>_eot [<dfa.eot; wrap="\n", separator=" ", null="-1">])
