@@ -430,7 +430,7 @@
 (defun bitset-set-size (set nwords)
   "Sets the size of a set.
    @param nwords how many words the new set should be"
-  (let* ((n (min nwords (bitset-word-len set)))
+  (let* ((n (max nwords (bitset-word-len set)))
 	 (growth (- n (bitset-word-len set)))
 	 (newbits (vconcat (bitset-bits set) (make-vector growth 0))))
     (setf (bitset-bits set) newbits)))
