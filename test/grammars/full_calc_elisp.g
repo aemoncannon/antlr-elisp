@@ -1,7 +1,7 @@
 grammar full_calc_elisp;
 options { language = ELisp; }
 
-evaluate : expression ;
+evaluate : expression EOF;
 
 expression : 
     mult (
