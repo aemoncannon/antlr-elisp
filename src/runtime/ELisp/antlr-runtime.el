@@ -169,7 +169,9 @@
       text))
    (t nil)))
 
-(defconst *antlr-token-eof-token* (make-common-token :type -1 :channel 0))
+(defconst *antlr-token-eof-token-type* -1)
+(defconst *antlr-token-eor-token-type* 1)
+(defconst *antlr-token-eof-token* (make-common-token :type *antlr-token-eof-token-type* :channel 0))
 (defconst *antlr-token-invalid-token* (make-common-token :type *antlr-token-invalid-token-type* :channel 0))
 (defconst *antlr-token-skip-token* (make-common-token :type *antlr-token-invalid-token-type* :channel 0))
 
@@ -372,6 +374,14 @@
 (defun create-bitset (bitsets)
   (make-bitset :bits bitsets))
 
+(defun bitset-member (set i)
+  (throw "Not yet implemented"))
+
+(defun bitset-or-in-place (set other-set)
+  (throw "Not yet implemented"))
+
+(defun bitset-remove (set i)
+  (throw "Not yet implemented"))
 
 
 (defstruct antlr-parser-context
@@ -386,6 +396,8 @@
   (discard-off-channel-tokens nil)
   (backtracking 0)
   (failed nil)
+  (last-error-index -1)
+  (error-recovery nil)
   )
 
 
@@ -396,7 +408,7 @@
 (defun parser-input-LT (k)
   "Get the ith token from the current position 1..n where k=1 is the first symbol of lookahead."
   (catch 'return
-    (if (= (antlr-parser-context-pos context) -1) (fill-buffer))
+    (if (= (antlr-parser-context-pos context) -1) (parser-fill-buffer))
     (if (= k 0) (throw 'return nil))
     (if (< k 0) (throw 'return (parser-input-LB (- k))))
     (if (>= (+ (antlr-parser-context-pos context) k (- 1)) (length (antlr-parser-context-token-buffer context)))
@@ -432,7 +444,7 @@
    ((eql (parser-input-LA 1) ttype)
     (progn
       (parser-consume)
-      ;;TODO: errorRecovery = false
+      (setf (antlr-parser-context-error-recovery context) nil)
       (setf (antlr-parser-context-failed context) nil)))
 
    ((> (antlr-parser-context-backtracking 0))
@@ -451,7 +463,7 @@
   )
 
 
-(defmacro parser-consume ()
+(defun parser-consume ()
   "Move the input pointer to the next incoming token.  The stream
    must become active with LT(1) available.  consume() simply
    moves the input pointer so that LT(1) points at the next
@@ -467,7 +479,27 @@
 
 
 
-(defun fill-buffer ()
+(defun parser-consume-until-type (token-type)
+  "Consume tokens until one matches the given token set"
+  (let ((ttype (parser-input-LA 1)))
+    (while (and (/= ttype *antlr-token-eof-token-type*) (/= ttype token-type))
+      (parser-consume)
+      (setf ttype (parser-input-LA 1))
+      )
+    ))
+
+
+(defun parser-consume-until-in-set (set)
+  "Consume tokens until one matches the given token set"
+  (let ((ttype (parser-input-LA 1)))
+    (while (and (/= ttype *antlr-token-eof-token-type*) (not (bitset-member set ttype)))
+      (parser-consume)
+      (setf ttype (parser-input-LA 1))
+      )
+    ))
+
+
+(defun parser-fill-buffer ()
   "Load all tokens from the token source and put in token-buffer.
    This is done upon first LT request because you might want to
    set some token type / channel overrides before filling buffer."
@@ -477,9 +509,8 @@
     (lex-with-lexer 
      lexer-context 
      #'(lambda (token) 
-	 (if (and token (/= (common-token-type token) -1))
-	     (progn
-	       ;;boolean discard = false;
+	 (if (and token (/= (common-token-type token) *antlr-token-eof-token-type*))
+	     (let ((discard nil))
 	       ;;// is there a channel override for token type?
 	       ;;if ( channelOverrideMap!=null ) {
 	       ;;	Integer channelI = (Integer)
@@ -496,13 +527,11 @@
 	       ;;else if ( discardOffChannelTokens && t.getChannel()!=this.channel ) {
 	       ;;	discard = true;
 	       ;;}
-	       ;;if ( !discard )	{
-	       (setf (common-token-index token) index)
-
-	       ;;TODO This could be better..
-	       (setf tokens (cons token tokens))
-
-	       (incf index)
+	       (if (not discard)
+		   (progn
+		     (setf (common-token-index token) index)
+		     (setf tokens (cons token tokens)) ;;TODO This should be more efficient.
+		     (incf index)))
 	       ))))
     (setf (antlr-parser-context-token-buffer context) (vconcat (reverse tokens)))
     (setf (antlr-parser-context-pos context) 0)
@@ -545,15 +574,99 @@
 			   (make-vector (length (antlr-parser-context-following context)) nil))))
 	   (setf (antlr-parser-context-following context) f)))
      (incf (antlr-parser-context-fsp context))
-     (aset (antlr-parser-context-following context) 
-	   (antlr-parser-context-fsp context) 
-	   (gethash ',rule-name (antlr-parser-bitsets (antlr-parser-context-parser context))))
+     (aset (antlr-parser-context-following context)
+	   (antlr-parser-context-fsp context)
+	   ,rule-name)
      ))
 
 (defmacro parser-call-rule (name)
   `(progn 
      ;;(message (concat "calling rule " (format "%s" ',name))) 
      (funcall (gethash ',name (antlr-parser-rules (antlr-parser-context-parser context))) context)))
+
+
+
+(defun parser-report-error (re)
+  "Report a recognition problem.
+	
+   This method sets errorRecovery to indicate the parser is recovering
+   not parsing.  Once in recovery mode, no errors are generated.
+   To get out of recovery mode, the parser must successfully match
+   a token (after a resync).  So it will go:
+   		1. error occurs
+   		2. enter recovery mode, report error
+   		3. consume until token found in resynch set
+   		4. try to resume parsing
+   		5. next match() will reset errorRecovery mode
+   "
+  (unless (antlr-parser-context-error-recovery context)
+    (setf (antlr-parser-context-error-recovery context) t)
+    (message "%s : %s" (car re) (cdr re))
+    )
+  )
+
+(defun parser-recover (re)
+  "Recover from an error found on the input stream.  Mostly this is
+   NoViableAlt exceptions, but could be a mismatched token that
+   the match() routine could not recover from."
+	
+  (if (= (antlr-parser-context-last-error-index context) 
+	 (antlr-parser-context-pos context))
+      ;; uh oh, another error at same token index ; must be a case
+      ;; where LT(1) is in the recovery token set so nothing is
+      ;; consumed	       ; consume a single token so at least to prevent
+      ;; an infinite loop  ; this is a failsafe.
+      (parser-consume)
+    )
+
+  (setf (antlr-parser-context-last-error-index context)
+	(antlr-parser-context-pos context))
+
+  (let ((follow-set (parser-compute-error-recover-set)))
+    (parser-consume-until-in-set follow-set)
+    ))
+
+
+(defun parser-compute-error-recovery-set () 
+  "Compute the error recovery set for the current rule.  During
+   rule invocation, the parser pushes the set of tokens that can
+   follow that rule reference on the stack; this amounts to
+   computing FIRST of what follows the rule reference in the
+   enclosing rule. This local follow set only includes tokens
+   from within the rule; i.e., the FIRST computation done by
+   ANTLR stops at the end of a rule....(see java source for examples)"
+  (parser-combine-follows nil))
+
+(defun parser-compute-context-sensitive-rule-follow ()
+  "Compute the context-sensitive FOLLOW set for current rule.
+   This is set of token types that can follow a specific rule
+   reference given a specific call chain.  You get the set of
+   viable tokens that can possibly come next (lookahead depth 1)
+   given the current call chain....(see java source for examples)"
+  (parser-combine-follows t))
+
+
+(defun parser-combine-follows (exact)
+  (let ((top (antlr-parser-context-fsp context))
+	(follow-set (create-bitset)))
+    (let ((i top))
+      (catch 'break
+	(while (>= i 0)
+	  (let ((local-follow-set (aref (antlr-parser-context-following context) i)))
+	    (bitset-or-in-place follow-set local-follow-set)
+	    (if (and exact (not (bitset-member local-follow-set *antlr-token-eor-token-type*)))
+		(throw 'break nil))
+	    (decf i)
+	    ))))
+    (bitset-remove follow-set *antlr-token-eor-token-type*)
+    follow-set
+    ))
+
+
+
+;;;;;;;;;;;;;;;
+;; Utilities ;;
+;;;;;;;;;;;;;;;
 
 
 (defmacro antlr-alt-case (expr-form &rest clauses)
@@ -572,10 +685,6 @@
 			     `((eql ,val-sym ,(car c)) ,@tail))))
 		       clauses)))))
 
-
-(defun report-error (re)
-  (signal (car re) (cdr re))
-  )
 
 (provide 'antlr-runtime)
 ;;; antlr-runtime.el ends here

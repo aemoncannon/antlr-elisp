@@ -209,8 +209,14 @@ rule(ruleName,ruleDescriptor,block,emptyRule,description,exceptions,finally,memo
     <actions.(actionScope).rulecatch>
 <else>
     (error 
-      (report-error re)
-      (recover context re)))<\n>
+    <if(LEXER)>
+      (lexer-report-error re)<\n>
+      (lexer-recover re)<\n>
+    <else>
+      (parser-report-error re)<\n>
+      (parser-recover re)<\n>
+    <endif>
+    ))
 <endif>
 <endif>
 <endif>)
