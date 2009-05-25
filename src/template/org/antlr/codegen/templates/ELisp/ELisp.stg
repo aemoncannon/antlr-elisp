@@ -95,7 +95,9 @@ genericParser(grammar, name, scopes, tokens, tokenNames, rules, numRules,
     (parser-token-names "\<invalid>" "\<EOR>" "\<DOWN>" "\<UP>" <tokenNames; separator=" ">)
 
     <tokens:{(deftoken <it.name> <it.type>)}; separator="\n">
+
     <scopes:{<if(it.isDynamicGlobalScope)><globalAttributeScope(scope=it)><endif>}>
+
     <bitsets:bitset(name={FOLLOW_<it.name>_in_<it.inName><it.tokenIndex>},
                     words64=it.bits)>
 
@@ -648,10 +650,7 @@ dfaState(k,edges,eotPredictsAlt,description,stateNumber,semPredState) ::= <<
     (setq alt<decisionNumber> <eotPredictsAlt>)
 <else>
     <ruleBacktrackFailure()>
-    NoViableAltException nvae =
-        new NoViableAltException("<description>", <decisionNumber>, <stateNumber>, input);<\n>
-    <@noViableAltException()>
-    throw nvae;<\n>
+    (signal 'no-viable-alt (list "<description>" <decisionNumber> <stateNumber> context))
 <endif>
 )<edges:{)}; separator="">)<\n>
 >>
@@ -725,10 +724,7 @@ dfaStateSwitch(k,edges,eotPredictsAlt,description,stateNumber,semPredState) ::= 
     (setq alt<decisionNumber> <eotPredictsAlt>)
 <else>
     <ruleBacktrackFailure()>
-    NoViableAltException nvae =
-        new NoViableAltException("<description>", <decisionNumber>, <stateNumber>, input);<\n>
-    <@noViableAltException()>
-    throw nvae;<\n>
+    (signal 'no-viable-alt (list "<description>" <decisionNumber> <stateNumber> context))
 <endif>)
 )<\n>
 >>

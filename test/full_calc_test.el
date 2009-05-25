@@ -21,6 +21,10 @@
       (assert-equal "More functions"
                     nil
                     (do-parse 'full_calc_elispLexer 'full_calc_elispParser 'evaluate "(ln 10 + (PI + 2)) * 3.2"))
+
+      (assert-error "No viable alternative at token"
+                    'no-viable-alt
+                    (do-parse 'full_calc_elispLexer 'full_calc_elispParser 'evaluate "(ln 10 + (PI + 2)) * ln"))
       )
 
 
