@@ -228,11 +228,16 @@
                             '(antlr-lexer-context-input context)
 			  '(antlr-lexer-context-input (antlr-parser-context-input context))))
         (let-bindings '()))
+    
+    ;; Create let-bindings for tokens
     (maphash (lambda (key value)
                (setq let-bindings (cons (list key value) let-bindings))) tokens)
+
+    ;; Create let-bindings for bitsets
     (if bitsets
 	(maphash (lambda (key value)
 		   (setq let-bindings (cons (list key value) let-bindings))) bitsets))
+
     `(puthash ',name (lambda (context ,@params) 
                        (with-current-buffer ,current-buffer
                          (let (,@let-bindings)
