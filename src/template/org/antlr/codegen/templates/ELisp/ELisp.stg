@@ -1116,10 +1116,12 @@ execAction(action) ::= <<
 // M I S C (properties, etc...)
 
 bitset(name, words64) ::= <<
-(parser-bitset <name> [<words64:{(read (concat "#X" (substring "<it>" 2)))};separator=" ">])<\n>
+(parser-bitset <name> (vconcat (list <words64:{(read (concat "#X" (substring "<it>" 2)))};separator=" ">)))<\n>
 >>
 
 codeFileExtension() ::= ".el"
 
 true() ::= "t"
 false() ::= "nil"
+
+

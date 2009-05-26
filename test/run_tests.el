@@ -49,5 +49,6 @@
 (load "calc_lexer_test.el")
 (load "full_calc_test.el")
 (load "bitset_test.el")
+(load "error_recovery_test.el")
 
 ;;; run_tests.el ends here

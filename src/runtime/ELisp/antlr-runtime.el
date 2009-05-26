@@ -206,7 +206,7 @@
 
 (defmacro lexer-call-rule (name)
   `(progn 
-					;(message (concat "calling rule " (format "%s" ',name))) 
+     ;;(message (concat "calling rule " (format "%s" ',name))) 
      (funcall (gethash ',name (antlr-lexer-rules (antlr-lexer-context-lexer context))) context)))
 
 (defmacro lexer-token-id (name)
@@ -369,9 +369,8 @@
 
 (defmacro parser-bitset (name bitsets)
   `(puthash ',name 
-	    (make-bitset :bits ',bitsets)
+	    (make-bitset :bits ,bitsets)
 	    (antlr-parser-bitsets current-parser)))
-
 
 
 (defstruct bitset
@@ -397,6 +396,7 @@
     (let ((m (min (bitset-word-len set) 
 		  (bitset-word-len a)))
 	  (i -1))
+
       (setf i (- m 1))
       (while (>= i 0)
 	(aset (bitset-bits set) i
@@ -681,7 +681,7 @@
   "Recover from an error found on the input stream.  Mostly this is
    NoViableAlt exceptions, but could be a mismatched token that
    the match() routine could not recover from."
-	
+
   (if (= (antlr-parser-context-last-error-index context) 
 	 (antlr-parser-context-pos context))
       ;; uh oh, another error at same token index ; must be a case
@@ -694,7 +694,7 @@
   (setf (antlr-parser-context-last-error-index context)
 	(antlr-parser-context-pos context))
 
-  (let ((follow-set (parser-compute-error-recover-set)))
+  (let ((follow-set (parser-compute-error-recovery-set)))
     (parser-consume-until-in-set follow-set)
     ))
 
