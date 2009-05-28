@@ -200,6 +200,7 @@ rule(ruleName,ruleDescriptor,block,emptyRule,description,exceptions,finally,memo
         <block>
         <ruleCleanUp()>
         <(ruleDescriptor.actions.after):execAction()>
+	nil
        )
 <if(exceptions)>
     <exceptions:{e|<catch(decl=e.decl,action=e.action)><\n>}>))
@@ -408,7 +409,7 @@ positiveClosureBlock(alts,decls,decision,enclosingBlockLevel,blockLevel,decision
             (if (>= cnt<decisionNumber> 1)
               (throw 'loop<decisionNumber> nil))
             <ruleBacktrackFailure()>
-            (signal 'lexer-early-exit (list <decisionNumber>))))
+            (signal 'early-exit (list <decisionNumber>))))
         (incf cnt<decisionNumber>))
     ))
 <@postloop()>)
@@ -520,15 +521,38 @@ matchSet(s,label,elementIndex,postmatchCode="") ::= <<
 <endif>
 (if <s>
   (progn
+
+    <if(LEXER)>
     (lexer-input-consume)
+    <else>
+    (parser-input-consume)
+    <endif>
+
     <postmatchCode>
-<if(!LEXER)>
-    (setq errorRecovery nil)
-<endif>
-    <if(backtracking)>(setq failed nil)<endif>)
+
+    <if(!LEXER)>
+    (setf (antlr-parser-context-error-recovery context) nil)
+    <endif>
+
+    <if(!LEXER)>
+    <if(backtracking)>
+    (setf (antlr-parser-context-failed context) nil)
+    <endif>    
+    <endif>
+    )
+    (progn
+
     <ruleBacktrackFailure()>
     <@mismatchedSetException()>
-    (signal 'mismatched-set context))<\n>
+
+    <if(LEXER)>
+    (lexer-recover '(mismatched-set nil))
+    <else>
+    (parser-recover-from-mismatched-token-no-type 'mismatched-set FOLLOW_set_in_<ruleName><elementIndex>);
+    <endif>
+
+    (signal 'mismatched-set nil))<\n>
+)
 >>
 
 matchSetAndListLabel(s,label,elementIndex,postmatchCode) ::= <<
@@ -584,7 +608,6 @@ ruleRef(rule,label,elementIndex,args) ::= <<
 <endif>
 (decf (antlr-parser-context-fsp context))
 <checkRuleBacktrackFailure()><\n>
-nil
 >>
 
 /** ids+=r */
@@ -882,13 +905,26 @@ lookaheadTest(atom,k,atomAsInt) ::= "(equal LA<decisionNumber>_<stateNumber> <at
 /** Sometimes a lookahead test cannot assume that LA(k) is in a temp variable
  *  somewhere.  Must ask for the lookahead directly.
  */
-isolatedLookaheadTest(atom,k,atomAsInt) ::= "(equal (lexer-input-LA <k>) <atom>)"
+isolatedLookaheadTest(atom,k,atomAsInt) ::= <<
+   <if(LEXER)>
+   (equal (lexer-input-LA <k>) <atom>)
+   <else>
+   (equal (parser-input-LA <k>) <atom>)
+   <endif>
+>>
 
 lookaheadRangeTest(lower,upper,k,rangeNumber,lowerAsInt,upperAsInt) ::= <<
 (and (\>= LA<decisionNumber>_<stateNumber> <lower>) (\<= LA<decisionNumber>_<stateNumber> <upper>))
 >>
 
-isolatedLookaheadRangeTest(lower,upper,k,rangeNumber,lowerAsInt,upperAsInt) ::= "(and (\>= (lexer-input-LA <k>) <lower>) (\<= (lexer-input-LA <k>) <upper>))"
+isolatedLookaheadRangeTest(lower,upper,k,rangeNumber,lowerAsInt,upperAsInt) ::= <<
+   <if(LEXER)>
+  (and (\>= (lexer-input-LA <k>) <lower>) (\<= (lexer-input-LA <k>) <upper>))
+  <else>
+  (and (\>= (parser-input-LA <k>) <lower>) (\<= (parser-input-LA <k>) <upper>))
+  <endif>
+>>
+
 
 setTest(ranges) ::= "(or <ranges; separator=\" \">)"
 

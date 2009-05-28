@@ -22,6 +22,10 @@
     <condition property="grammar.full_calc_java.notUpdated">
       <uptodate targetfile="build/test/grammars/full_calc_javaLexer.java" srcfile="test/grammars/full_calc_java.g"/>
     </condition>
+
+    <condition property="grammar.closures_java.notUpdated">
+      <uptodate targetfile="build/test/grammars/closures_javaLexer.java" srcfile="test/grammars/closures_java.g"/>
+    </condition>
     
     <condition property="grammar.test_lexer_elisp.notUpdated">
       <and>
@@ -41,6 +45,13 @@
       <and>
         <uptodate targetfile="build/test/grammars/full_calc_elispLexer.el" srcfile="test/grammars/full_calc_elisp.g"/>
         <uptodate targetfile="build/test/grammars/full_calc_elispLexer.el" srcfile="src/template/org/antlr/codegen/templates/ELisp/ELisp.stg"/>
+      </and>
+    </condition>
+
+    <condition property="grammar.closures_elisp.notUpdated">
+      <and>
+        <uptodate targetfile="build/test/grammars/closures_elispLexer.el" srcfile="test/grammars/closures_elisp.g"/>
+        <uptodate targetfile="build/test/grammars/closures_elispLexer.el" srcfile="src/template/org/antlr/codegen/templates/ELisp/ELisp.stg"/>
       </and>
     </condition>
   </target>
@@ -75,6 +86,14 @@
 
     <antcall target="build-grammar">
       <param name="grammar-file" value="full_calc_elisp"/>
+    </antcall>
+
+    <antcall target="build-grammar">
+      <param name="grammar-file" value="closures_elisp"/>
+    </antcall>
+
+    <antcall target="build-grammar">
+      <param name="grammar-file" value="closures_java"/>
     </antcall>
   </target>
 

@@ -198,6 +198,18 @@
      '(error antlr-error))
 (put 'no-viable-alt 'error-message "No viable alternative")
 
+(put 'early-exit 'error-conditions
+     '(error antlr-error))
+(put 'early-exit 'error-message "Early exit")
+
+(put 'mismatched-set 'error-conditions
+     '(error antlr-error))
+(put 'mismatched-set 'error-message "Mismatched set")
+
+
+(defun display-recognition-error (re)
+  (message "%s : %s" (car re) (cdr re)))
+
 (defun lexer-set-type (type)
   (setf (antlr-lexer-context-type context) type))
 
@@ -337,14 +349,27 @@
 	  (when (= (point) (point-max))
 	    (funcall method *antlr-token-eof-token*)
 	    (throw 'at-end nil))
-	  (condition-case nil
+	  (condition-case re
 	      (progn
 		(funcall (gethash 'Tokens (antlr-lexer-rules (antlr-lexer-context-lexer context))) context)
 		(when (null (antlr-lexer-context-token context))
 		  (lex-emit-token))
 		(unless (eq (antlr-lexer-context-token context) *antlr-token-skip-token*)
 		  (funcall method (antlr-lexer-context-token context))))
-	    (message "TODO handling error here")))))))
+	    (error
+	     (lexer-report-error re)
+	     (lexer-recover re)
+	     )))))))
+
+(defun lexer-report-error (re)
+  (display-recognition-error re))
+
+(defun lexer-recover (re)
+  "Lexers can normally match any char in it's vocabulary after matching
+   a token, so do the easy thing and just kill a character and hope
+   it all works out.  You can instead use the rule invocation stack
+   to do sophisticated error recovery if you are in a fragment rule."
+  (lexer-input-consume))
   
 
 (defstruct antlr-parser
@@ -490,8 +515,7 @@
       (while (< n k)
 	;;skip off-channel tokens
 	(setf i (skip-off-token-channels (+ i 1)))
-	(incf n)
-	)
+	(incf n))
       (let ((token-buffer (antlr-parser-context-token-buffer context)))
 	(if (>= i (length token-buffer))
 	    (throw 'return *antlr-token-eof-token*))
@@ -515,14 +539,14 @@
 
    ((eql (parser-input-LA 1) ttype)
     (progn
-      (parser-consume)
+      (parser-input-consume)
       (setf (antlr-parser-context-error-recovery context) nil)
       (setf (antlr-parser-context-failed context) nil)))
 
-   ((> (antlr-parser-context-backtracking 0))
+   ((> (antlr-parser-context-backtracking context) 0)
     (setf (antlr-parser-context-failed context) t))
 
-   (t (parser-mismatch(ttype, follow)))))
+   (t (parser-mismatch ttype follow))))
 
 
 (defun parser-mismatch (ttype follow)
@@ -530,12 +554,39 @@
    differently.  Override this method in your parser to do things
    like bailing out after the first error; just throw the mte object
    instead of calling the recovery method."
-  (signal 'mismatched-token (list ttype context))
-  ;; TODO: recoverFromMismatchedToken(input, mte, ttype, follow)	;
+  (parser-recover-from-mismatched-token 'mismatched-token ttype follow))
+
+
+(defun parser-recover-from-mismatched-token (error-type ttype follow)
+  ;;if next token is what we are looking for then "delete" this token
+  (if (= (parser-input-LA 2) ttype)
+      (progn
+	(parser-report-error e)
+	;;(begin-resync)
+	;;simply delete extra token
+	(parser-input-consume) 
+	;;(end-resync)
+	;;move past ttype token as if all were ok
+	(parser-input-consume))
+    (progn
+      ;; if (!recoverFromMismatchedElement(input,e,follow) ) {
+      ;;			throw e;
+      ;; }
+      (signal error-type nil)
+      )
+    ))
+
+
+(defun parser-recover-from-mismatched-token-no-type (error-type follow)
+  ;;TODO do single token deletion like above for Token mismatch
+  ;; if ( !recoverFromMismatchedElement(input,e,follow) ) {
+  ;;	throw e;
+  ;; }
+  (signal error-type nil)
   )
 
 
-(defun parser-consume ()
+(defun parser-input-consume ()
   "Move the input pointer to the next incoming token.  The stream
    must become active with LT(1) available.  consume() simply
    moves the input pointer so that LT(1) points at the next
@@ -555,7 +606,7 @@
   "Consume tokens until one matches the given token set"
   (let ((ttype (parser-input-LA 1)))
     (while (and (/= ttype *antlr-token-eof-token-type*) (/= ttype token-type))
-      (parser-consume)
+      (parser-input-consume)
       (setf ttype (parser-input-LA 1))
       )
     ))
@@ -565,7 +616,7 @@
   "Consume tokens until one matches the given token set"
   (let ((ttype (parser-input-LA 1)))
     (while (and (/= ttype *antlr-token-eof-token-type*) (not (bitset-member set ttype)))
-      (parser-consume)
+      (parser-input-consume)
       (setf ttype (parser-input-LA 1))
       )
     ))
@@ -608,6 +659,7 @@
     (setf (antlr-parser-context-token-buffer context) (vconcat (reverse tokens)))
     (setf (antlr-parser-context-pos context) 0)
     (setf (antlr-parser-context-pos context) (skip-off-token-channels 0))
+
     ))
 
 
@@ -673,9 +725,7 @@
    "
   (unless (antlr-parser-context-error-recovery context)
     (setf (antlr-parser-context-error-recovery context) t)
-    (message "%s : %s" (car re) (cdr re))
-    )
-  )
+    (display-recognition-error re)))
 
 (defun parser-recover (re)
   "Recover from an error found on the input stream.  Mostly this is
@@ -688,14 +738,16 @@
       ;; where LT(1) is in the recovery token set so nothing is
       ;; consumed	       ; consume a single token so at least to prevent
       ;; an infinite loop  ; this is a failsafe.
-      (parser-consume)
+      (parser-input-consume)
     )
 
   (setf (antlr-parser-context-last-error-index context)
 	(antlr-parser-context-pos context))
 
   (let ((follow-set (parser-compute-error-recovery-set)))
+    ;;(begin-resync)
     (parser-consume-until-in-set follow-set)
+    ;;(end-resync)
     ))
 
 

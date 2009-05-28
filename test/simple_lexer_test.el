@@ -13,6 +13,10 @@
                       (4 . "0")
                       (-1 . nil))
                     (collect-lex-tokens 'test_lexer_elispLexer "00"))
-      (assert-error "Basic failure"
-                    'mismatched-token
-                    (collect-lex-tokens 'test_lexer_elispLexer "1")))
+
+      ;; TODO: No longer signaling recognition errors. Need a different mechanism for testing
+      ;; for error output.
+;;      (assert-error "Basic failure"
+;;                    'mismatched-token
+;;                    (collect-lex-tokens 'test_lexer_elispLexer "1"))
+      )

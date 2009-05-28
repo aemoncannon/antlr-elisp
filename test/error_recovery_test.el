@@ -8,8 +8,9 @@
 
       (assert-equal "Should expect an expression after the first '('.. then go into recovery mode.. then resync on the next ')'."
                     nil
-                    (progn 
-		      (message "\nShould print no-viable-alt error:")
+		    
+		    (progn
+		      (message "\nExpecting no-viable-alt:")
 		      (do-parse 'full_calc_elispLexer 'full_calc_elispParser 'evaluate "()")))
 
       )
