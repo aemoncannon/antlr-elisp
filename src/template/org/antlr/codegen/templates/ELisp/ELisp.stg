@@ -656,7 +656,7 @@ dfaState(k,edges,eotPredictsAlt,description,stateNumber,semPredState) ::= <<
     (setq alt<decisionNumber> <eotPredictsAlt>)
 <else>
     <ruleBacktrackFailure()>
-    (signal 'no-viable-alt (list "<description>" <decisionNumber> <stateNumber> context))
+    (signal 'no-viable-alt (list "<description>" <decisionNumber> <stateNumber>))
 <endif>
 )<edges:{)}; separator="">)<\n>
 >>
@@ -730,7 +730,7 @@ dfaStateSwitch(k,edges,eotPredictsAlt,description,stateNumber,semPredState) ::= 
     (setq alt<decisionNumber> <eotPredictsAlt>)
 <else>
     <ruleBacktrackFailure()>
-    (signal 'no-viable-alt (list "<description>" <decisionNumber> <stateNumber> context))
+    (signal 'no-viable-alt (list "<description>" <decisionNumber> <stateNumber>))
 <endif>)
 )<\n>
 >>
