@@ -250,13 +250,14 @@
 	(maphash (lambda (key value)
 		   (setq let-bindings (cons (list key value) let-bindings))) bitsets))
 
-    `(puthash ',name (lambda (context ,@params) 
+    `(puthash ',name (lambda (context ,@params)
                        (with-current-buffer ,current-buffer
                          (let (,@let-bindings)
                            ,@body)))
               (if (boundp 'current-lexer) 
-                  (antlr-lexer-rules current-lexer) 
+                  (antlr-lexer-rules current-lexer)
 		(antlr-parser-rules current-parser)))))
+
 
 (defmacro lexer-match-range (a b)
   (let ((la (lexer-input-LA 1)))
@@ -495,11 +496,40 @@
   (failed nil)
   (last-error-index -1)
   (error-recovery nil)
+  (last-marker -1)
   )
+
+
+
+(defmacro parser-call-synpred (synpred-rule-name)
+  `(progn
+     (incf (antlr-parser-context-backtracking context))
+     (let ((start (parser-input-mark))
+	   (success nil))
+       (condition-case er
+	   (parser-call-rule ,synpred-rule-name) ;; can never throw exception
+	 (error
+	  (throw er "Illegal state! synpreds cannot throw exceptions.")))
+       (setq success (not (antlr-parser-context-failed context)))
+       (parser-input-rewind start)
+       (decf (antlr-parser-context-backtracking context))
+       (setf (antlr-parser-context-failed context) nil)
+       success)))
+
+
+(defun parser-input-mark ()
+  (if (= (antlr-parser-context-pos context) -1) (parser-fill-buffer))
+  (setf (antlr-parser-context-last-marker context) (antlr-parser-context-pos context))
+  (antlr-parser-context-last-marker context))
+
+
+(defun parser-input-rewind (p)
+  (setf (antlr-parser-context-pos context) p))
 
 
 (defun parser-input-LA (k)
   (common-token-type (parser-input-LT k)))
+
 
 
 (defun parser-input-LT (k)

@@ -142,13 +142,20 @@ treeParser(grammar, name, scopes, tokens, tokenNames, globalAction, rules, numRu
 synpredRule(ruleName, ruleDescriptor, block, description, nakedBlock) ::=
 <<
 ;; $ANTLR start <ruleName>
-;; FIXME(synpred rule) <ruleName>
+(defrule <ruleName>_fragment (<ruleDescriptor.parameterScope:parameterScope(scope=it)>)
+  <if(trace)>(trace-in "<ruleName>_fragment" <ruleDescriptor.index>)<endif>
+  (catch 'return
+  (unwind-protect
+    (progn 
+        <block>
+	nil
+	)
+    <if(trace)>(trace-out "<ruleName>_fragment" <ruleDescriptor.index>)<endif>
+    )))
 ;; $ANTLR end <ruleName>
 >>
 
-synpred(name) ::= <<
-;; FIXME(synpred) name
->>
+synpred(name) ::= << >>
 
 lexerSynpred(name) ::= <<
 <synpred(name)>
@@ -162,12 +169,20 @@ ruleMemoization(name) ::= <<
 
 /** How to test for failure and return from rule */
 checkRuleBacktrackFailure() ::= <<
-<if(backtracking)>;; FIXME(checkRuleBacktrackFailure)<endif>
+<if(backtracking)>
+	(if (antlr-parser-context-failed context) 
+	(throw 'rule-return (or <ruleReturnValue()>)))
+<endif>
 >>
 
 /** This rule has failed, exit indicating failure during backtrack */
 ruleBacktrackFailure() ::= <<
-<if(backtracking)>;; FIXME(ruleBacktrackFailure)<endif>
+<if(backtracking)>
+	(if (> (antlr-parser-context-backtracking context) 0)
+	(progn
+	(setf (antlr-parser-context-failed context) t)
+	(throw 'rule-return (or <ruleReturnValue()>))))
+<endif>
 >>
 
 /** How to generate code for a rule.  This includes any return type
@@ -192,6 +207,7 @@ rule(ruleName,ruleDescriptor,block,emptyRule,description,exceptions,finally,memo
   <ruleLabelDefs()>
   <ruleDescriptor.actions.init>
   <@preamble()>
+  (catch 'rule-return
   (unwind-protect
     (progn 
       (condition-case re
@@ -226,7 +242,9 @@ rule(ruleName,ruleDescriptor,block,emptyRule,description,exceptions,finally,memo
     <ruleScopeCleanUp()>
     <finally>)
     <@postamble()>
-    <ruleReturnValue()>)
+    <ruleReturnValue()>
+)
+)
 ;; $ANTLR end <ruleName>
 >>
 
@@ -295,7 +313,7 @@ retval.stop = input.LT(-1);<\n>
 memoize() ::= <<
 <if(memoize)>
 <if(backtracking)>
-(if (> backtracking 0)
+(if (> (antlr-parser-context-backtracking context) 0)
   (memoize input <ruleDescriptor.index> <ruleDescriptor.name>_StartIndex))
 <endif>
 <endif>
@@ -837,7 +855,7 @@ cyclicDFA(dfa) ::= <<
             <state>}; separator="\n">
         }
 <if(backtracking)>
-        (when (> backtracking 0)
+        (when (> (antlr-parser-context-backtracking context) 0)
           (setq failed t)
           (throw 'return -1))<\n>
 <endif>
@@ -898,7 +916,7 @@ notPredicate(pred) ::= "(not <evalPredicate(...)>)"
 
 evalPredicate(pred,description) ::= "<pred>"
 
-evalSynPredicate(pred,description) ::= "(<pred>)"
+evalSynPredicate(pred,description) ::= "(parser-call-synpred <pred>_fragment)"
 
 lookaheadTest(atom,k,atomAsInt) ::= "(equal LA<decisionNumber>_<stateNumber> <atom>)"
 
@@ -924,6 +942,8 @@ isolatedLookaheadRangeTest(lower,upper,k,rangeNumber,lowerAsInt,upperAsInt) ::= 
   (and (\>= (parser-input-LA <k>) <lower>) (\<= (parser-input-LA <k>) <upper>))
   <endif>
 >>
+
+
 
 
 setTest(ranges) ::= "(or <ranges; separator=\" \">)"
@@ -1141,7 +1161,7 @@ execAction(action) ::= <<
 (when (<actions.(actionScope).synpredgate>)
   <action>)
 <else>
-(when (= backtracking 0)
+(when (= (antlr-parser-context-backtracking context) 0)
   <action>)
 <endif>
 <else>

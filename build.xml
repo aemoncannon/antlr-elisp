@@ -54,6 +54,13 @@
         <uptodate targetfile="build/test/grammars/closures_elispLexer.el" srcfile="src/template/org/antlr/codegen/templates/ELisp/ELisp.stg"/>
       </and>
     </condition>
+
+    <condition property="grammar.syntactic_pred_elisp.notUpdated">
+      <and>
+        <uptodate targetfile="build/test/grammars/syntactic_pred_elispLexer.el" srcfile="test/grammars/syntactic_pred_elisp.g"/>
+        <uptodate targetfile="build/test/grammars/syntactic_pred_elispLexer.el" srcfile="src/template/org/antlr/codegen/templates/ELisp/ELisp.stg"/>
+      </and>
+    </condition>
   </target>
 
   <target name="compile" depends="prepare">
@@ -94,6 +101,10 @@
 
     <antcall target="build-grammar">
       <param name="grammar-file" value="closures_java"/>
+    </antcall>
+
+    <antcall target="build-grammar">
+      <param name="grammar-file" value="syntactic_pred_elisp"/>
     </antcall>
   </target>
 

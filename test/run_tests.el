@@ -51,5 +51,6 @@
 (load "bitset_test.el")
 (load "error_recovery_test.el")
 (load "closures_test.el")
+(load "synpred_test.el")
 
 ;;; run_tests.el ends here
