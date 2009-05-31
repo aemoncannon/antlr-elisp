@@ -7,14 +7,26 @@ import org.antlr.tool.Grammar;
 public class ELispTarget extends Target {
     public String getTargetCharLiteralFromANTLRCharLiteral(CodeGenerator generator,
                                                            String literal){
-        
-        if(literal.equals("' '")) {
-            return "?\\ ";
+	
+	// Escape all these characters so elisp reader and editing commands 
+	// don't get confused.
+        if(literal.equals("' '") ||
+	   literal.equals("'\"'")|| 
+	   literal.equals("'('") || 
+	   literal.equals("')'") || 
+	   literal.equals("'|'") || 
+	   literal.equals("';'") || 
+	   literal.equals("'''") || 
+	   literal.equals("'`'") || 
+	   literal.equals("'#'") || 
+	   literal.equals("'.'") || 
+	   literal.equals("','")) {
+            return "?\\" + literal.substring(1, literal.length() - 1);
         }
         return "?" + literal.substring(1, literal.length()-1);
-	}
+    }
 
-	public int getMaxCharValue(CodeGenerator generator) {
-		return 0xFF;
-	}
+    public int getMaxCharValue(CodeGenerator generator) {
+	return 0xFF;
+    }
 }

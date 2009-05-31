@@ -156,10 +156,8 @@ synpredRule(ruleName, ruleDescriptor, block, description, nakedBlock) ::=
 >>
 
 synpred(name) ::= << >>
+lexerSynpred(name) ::= <<>>
 
-lexerSynpred(name) ::= <<
-<synpred(name)>
->>
 
 ruleMemoization(name) ::= <<
 <if(memoize)>
@@ -170,20 +168,37 @@ ruleMemoization(name) ::= <<
 /** How to test for failure and return from rule */
 checkRuleBacktrackFailure() ::= <<
 <if(backtracking)>
-	(if (antlr-parser-context-failed context) 
+	<if(LEXER)>
+	(if (antlr-lexer-context-failed context) 
 	(throw 'rule-return (or <ruleReturnValue()>)))
+
+	<else>
+
+	(if (antlr-parser-context-failed context)
+	(throw 'rule-return (or <ruleReturnValue()>)))
+	<endif>
 <endif>
 >>
 
 /** This rule has failed, exit indicating failure during backtrack */
 ruleBacktrackFailure() ::= <<
 <if(backtracking)>
+	<if(LEXER)>
+	(if (> (antlr-lexer-context-backtracking context) 0)
+	(progn
+	(setf (antlr-lexer-context-failed context) t)
+	(throw 'rule-return (or <ruleReturnValue()>))))
+
+	<else>
+
 	(if (> (antlr-parser-context-backtracking context) 0)
 	(progn
 	(setf (antlr-parser-context-failed context) t)
 	(throw 'rule-return (or <ruleReturnValue()>))))
+	<endif>
 <endif>
 >>
+
 
 /** How to generate code for a rule.  This includes any return type
  *  data aggregates required for multiple return values.
@@ -327,6 +342,7 @@ lexerRule(ruleName,nakedBlock,ruleDescriptor,block,memoize) ::= <<
   <if(trace)>(trace-in "<ruleName>" <ruleDescriptor.index>)<endif>
   <ruleScopeSetUp()>
   <ruleDeclarations()>
+  (catch 'rule-return
   (unwind-protect 
     (progn
 <if(nakedBlock)>
@@ -351,7 +367,7 @@ lexerRule(ruleName,nakedBlock,ruleDescriptor,block,memoize) ::= <<
     <ruleScopeCleanUp()>
     <memoize()>
   )
- )
+ ))
 ) ;; END rule <ruleName>
 >>
 
@@ -591,9 +607,20 @@ match(<string>); <checkRuleBacktrackFailure()>
 
 wildcard(label,elementIndex) ::= <<
 <if(label)>
-<label>=(<labelType>)input.LT(1);<\n>
+  <if(LEXER)> 
+    (setq <label> (lexer-input-LT 1))<\n>
+  <else>
+    (setq <label> (parser-input-LT 1))<\n>
+  <endif>      
 <endif>
-matchAny(input); <checkRuleBacktrackFailure()>
+
+<if(LEXER)> 
+  (lexer-match-any)
+<else>
+  (parser-match-any)
+<endif>     
+<checkRuleBacktrackFailure()>
+
 >>
 
 wildcardAndListLabel(label,elementIndex) ::= <<
@@ -604,9 +631,10 @@ wildcardAndListLabel(label,elementIndex) ::= <<
 /** Match . wildcard in lexer */
 wildcardChar(label, elementIndex) ::= <<
 <if(label)>
-(setq <label> (lexer-input-LA 1))<\n>
+  (setq <label> (lexer-input-LA 1))<\n>
 <endif>
-matchAny(); <checkRuleBacktrackFailure()>
+(lexer-match-any)
+<checkRuleBacktrackFailure()>
 >>
 
 wildcardCharListLabel(label, elementIndex) ::= <<
@@ -843,66 +871,87 @@ cyclicDFA(dfa) ::= <<
   :accept (getDFA DFA<dfa.decisionNumber>_accept)
   :special (getDFA DFA<dfa.decisionNumber>_special)
   :transition (getDFA DFA<dfa.decisionNumber>_transition)
-  :description "<dfa.description>")
-
-    <@errorMethod()>
+  :description "<dfa.description>"
+  <@errorMethod()>
 <if(dfa.specialStateSTs)>
-    public int specialStateTransition(int s, IntStream input) throws NoViableAltException {
-    	int _s = s;
-        switch ( s ) {
+  :special-state-transition #'(lambda (s) 
+     (let ((s-original s))
+        (antlr-alt-case s
         <dfa.specialStateSTs:{state |
-        case <i0> : <! compressed special state numbers 0..n-1 !>
-            <state>}; separator="\n">
-        }
+        (case <i0> <! compressed special state numbers 0..n-1 !>
+            <state>) }; separator="\n">
+        )
 <if(backtracking)>
-        (when (> (antlr-parser-context-backtracking context) 0)
-          (setq failed t)
+	<if(LEXER)>
+        (when (> (antlr-lexer-context-backtracking context) 0)
+          (setf (antlr-lexer-context-failed context) t)
           (throw 'return -1))<\n>
+	<else>
+        (when (> (antlr-parser-context-backtracking context) 0)
+          (setf (antlr-parser-context-failed context) t)
+          (throw 'return -1))<\n>
+	<endif>
 <endif>
-        NoViableAltException nvae =
-            new NoViableAltException(getDescription(), <dfa.decisionNumber>, _s, input);
-        error(nvae);
-        throw nvae;
-    }<\n>
+	)
+    (signal 'no-viable-alt (list "<dfa.description>" <dfa.decisionNumber> s-original))
+    )
 <endif>
+)
 >>
 
 /** A state in a cyclic DFA; it's a special state and part of a big switch on
  *  state.
  */
 cyclicDFAState(decisionNumber,stateNumber,edges,needErrorClause,semPredState) ::= <<
-<if(LEXER)>
-(let ((LA<decisionNumber>_<stateNumber> (lexer-input-LA 1)))<\n>
-<else>
-(let ((LA<decisionNumber>_<stateNumber> (parser-input-LA 1)))<\n>
-<endif>
-<if(semPredState)> <! get next lookahead symbol to test edges, then rewind !>
-int index<decisionNumber>_<stateNumber> = input.index();
-input.rewind();<\n>
-<endif>
-s = -1;
-<edges; separator="\n "><edges:{)}; separator=""><\n>
-<if(semPredState)> <! return input cursor to state before we rewound !>
-input.seek(index<decisionNumber>_<stateNumber>);<\n>
-<endif>
-(when (>= s 0 ) 
-  (throw 'return s)
-break;
-)
+  <if(LEXER)>
+  (let ((LA<decisionNumber>_<stateNumber> (lexer-input-LA 1))
+         (index<decisionNumber>_<stateNumber> -1))<\n>
+  <else>
+  (let ((LA<decisionNumber>_<stateNumber> (parser-input-LA 1))
+         (index<decisionNumber>_<stateNumber> -1))<\n>
+  <endif>
+
+  
+  <if(semPredState)> <! get next lookahead symbol to test edges, then rewind !>
+    <if(LEXER)>
+    (setq index<decisionNumber>_<stateNumber>  (antlr-lexer-context-pos context))
+    (lexer-input-rewind)<\n>
+    <else>
+    (setq index<decisionNumber>_<stateNumber>  (antlr-parser-context-pos context))
+    (parser-input-rewind)<\n>
+    <endif>
+  <endif>
+  
+  (setq s  -1)
+  (cond 
+  <edges; separator="\n ">
+  )
+  
+  <if(semPredState)> <! return input cursor to state before we rewound !>
+    <if(LEXER)>
+    (lexer-input-seek index<decisionNumber>_<stateNumber>)
+    <else>
+    (parser-input-seek index<decisionNumber>_<stateNumber>)
+    <endif>
+  <endif>
+  
+  (when (>= s 0)
+    (throw 'return s))
+  )
 >>
 
 /** Just like a fixed DFA edge, test the lookahead and indicate what
  *  state to jump to next if successful.
  */
 cyclicDFAEdge(labelExpr, targetStateNumber, edgeNumber, predicates) ::= <<
-if ( (<labelExpr>) <if(predicates)>&& (<predicates>)<endif>) {s = <targetStateNumber>;}<\n>
+((and <labelExpr> <if(predicates)> <predicates> <endif>) (setq s <targetStateNumber>))
 >>
 
 /** An edge pointing at end-of-token; essentially matches any char;
  *  always jump to the target.
  */
 eotDFAEdge(targetStateNumber,edgeNumber, predicates) ::= <<
-(setq s <targetStateNumber>)<\n>
+(t (setq s <targetStateNumber>))
 >>
 
 
@@ -916,7 +965,13 @@ notPredicate(pred) ::= "(not <evalPredicate(...)>)"
 
 evalPredicate(pred,description) ::= "<pred>"
 
-evalSynPredicate(pred,description) ::= "(parser-call-synpred <pred>_fragment)"
+evalSynPredicate(pred,description) ::= <<
+  <if(!PARSER)>
+  (lexer-call-synpred <pred>_fragment)
+  <else>
+  (parser-call-synpred <pred>_fragment)
+  <endif>
+>>
 
 lookaheadTest(atom,k,atomAsInt) ::= "(equal LA<decisionNumber>_<stateNumber> <atom>)"
 
@@ -1161,8 +1216,15 @@ execAction(action) ::= <<
 (when (<actions.(actionScope).synpredgate>)
   <action>)
 <else>
+
+<if(LEXER)>
+(when (= (antlr-lexer-context-backtracking context) 0)
+  <action>)
+<else>
 (when (= (antlr-parser-context-backtracking context) 0)
   <action>)
+<endif>
+
 <endif>
 <else>
 <action>
