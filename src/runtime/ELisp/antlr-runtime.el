@@ -105,39 +105,42 @@
 
 
 (defun predict-DFA-with (dfa)
-  (save-excursion
-    (catch 'return
-      (let ((s 0))
-        (while t
-          (catch 'continue
-            (let ((special-state (aref (DFA-special dfa) s)))
-              (when (>= special-state 0)
-                (setq s (funcall (DFA-special-state-transition dfa) special-state))
-                (lexer-input-consume)
-                (throw 'continue nil))
-              (when (>= (aref (DFA-accept dfa) s) 1)
-                (throw 'return (aref (DFA-accept dfa) s)))
-              (let ((c (lexer-input-LA 1)))
-                (when (and (>= c (aref (DFA-min dfa) s)) (<= c (aref (DFA-max dfa) s)))
-                  (let ((snext (aref (aref (DFA-transition dfa) s) (- c (aref (DFA-min dfa) s)) )))
-                    (when (< snext 0)
-                      (when (>= (aref (DFA-eot dfa) s) 0)
-                        (setq s (aref (DFA-eot dfa) s))
-                        (lexer-input-consume)
-                        (throw 'continue nil))
-                      (dfa-no-viable-alt s)
-                      (throw 'return 0))
-                    (setq s snext)
-                    (lexer-input-consume)
-                    (throw 'continue nil)))
-                (when (>= (aref (DFA-eot dfa) s) 0)
-                  (setq s (aref (DFA-eot dfa) s))
-                  (lexer-input-consume)
-                  (throw 'continue nil))
-                (when (and (eq c *antlr-token-eof-token*) (>= (aref (DFA-eof dfa) s) 0))
-                  (throw 'return (aref (DFA-accept dfa) (aref (DFA-eof dfa) s))))
-                (dfa-no-viable-alt s)
-                (throw 'return 0)))))))))
+  (let ((mark (lexer-input-mark)))
+    (unwind-protect
+	(catch 'return
+	  (let ((s 0))
+	    (while t
+	      (catch 'continue
+		(let ((special-state (aref (DFA-special dfa) s)))
+		  (when (>= special-state 0)
+		    (setq s (funcall (DFA-special-state-transition dfa) special-state))
+		    (lexer-input-consume)
+		    (throw 'continue nil))
+		  (when (>= (aref (DFA-accept dfa) s) 1)
+		    (throw 'return (aref (DFA-accept dfa) s)))
+		  (let ((c (lexer-input-LA 1)))
+		    (when (and (>= c (aref (DFA-min dfa) s)) (<= c (aref (DFA-max dfa) s)))
+		      (let ((snext (aref (aref (DFA-transition dfa) s) (- c (aref (DFA-min dfa) s)) )))
+			(when (< snext 0)
+			  (when (>= (aref (DFA-eot dfa) s) 0)
+			    (setq s (aref (DFA-eot dfa) s))
+			    (lexer-input-consume)
+			    (throw 'continue nil))
+			  (dfa-no-viable-alt s)
+			  (throw 'return 0))
+			(setq s snext)
+			(lexer-input-consume)
+			(throw 'continue nil)))
+		    (when (>= (aref (DFA-eot dfa) s) 0)
+		      (setq s (aref (DFA-eot dfa) s))
+		      (lexer-input-consume)
+		      (throw 'continue nil))
+		    (when (and (eq c *antlr-token-eof-token*) (>= (aref (DFA-eof dfa) s) 0))
+		      (throw 'return (aref (DFA-accept dfa) (aref (DFA-eof dfa) s))))
+		    (dfa-no-viable-alt s)
+		    (throw 'return 0)))))))
+      (lexer-input-rewind-to mark))
+    ))
 
 
 (defun dfa-no-viable-alt (s)
@@ -210,6 +213,14 @@
 
 
 
+(defstruct antlr-char-stream-state
+  "The state of a character stream.
+   For elisp lexers, this amounts to 
+   tracking the point in the current 
+   buffer."
+  (pos -1)
+  (line -1)
+  (char-position-in-line -1))
 
 
 (defstruct antlr-lexer
@@ -235,15 +246,32 @@
   (text nil)
   (failed nil)
   (backtracking 0)
+
+  ;; Track the last mark() call result value for use in rewind().
+  (last-marker -1)
+  
+  ;; Tracks how deep lexer-input-mark calls are nested
+  (mark-depth 0)
+	
+  ;; A list of antlr-char-stream-state objects that tracks the stream state
+  ;; values line, char-position-in-line, and pos that can change as you
+  ;; move through the input stream.  Indexed from 1..markDepth.
+  ;; A nil is kept @ index 0.  Create upon first call to lexer-input-mark.
+  (markers '())
+
+  ;; Line number 1..n within the input
+  (line -1)
+
+  ;; The index of the character relative to the beginning of the line 0..n-1
+  (char-position-in-line -1)
   )
+
+(defun antlr-lexer-context-pos (context) (point))
 
 (defmacro deflexer (name)
   `(puthash ',name 
             (make-antlr-lexer :name ',name) 
             *antlr-runtime-lexers*))
-
-(defun antlr-lexer-context-pos (context) 
-  (point))
 
 
 (defun lexer-input-LA (n)
@@ -275,19 +303,73 @@
 
 
 (defun lexer-input-mark ()
-  (if (= (antlr-parser-context-pos context) -1) (parser-fill-buffer))
-  (setf (antlr-parser-context-last-marker context) (antlr-parser-context-pos context))
-  (antlr-parser-context-last-marker context))
+  (progn
+    (if (null (antlr-lexer-context-markers context))
+	;; depth 0 means no backtracking, leave blank
+	(setf (antlr-lexer-context-markers context) (list nil)))
+    (incf (antlr-lexer-context-mark-depth context))
+    (let ((state nil))
+      (if (>= (antlr-lexer-context-mark-depth context)
+	      (length (antlr-lexer-context-markers context)))
+	  (progn
+	    (setq state (make-antlr-char-stream-state))
+	    (setf (antlr-lexer-context-markers context) 
+		  (append (antlr-lexer-context-markers context) (list state))))
+	(progn
+	  (setq state (nth (antlr-lexer-context-mark-depth context)
+			   (antlr-lexer-context-markers context)))))
 
-(defun lexer-input-rewind-to (p)
-  (parser-input-seek p))
+      (setf (antlr-char-stream-state-pos state) 
+	    (antlr-lexer-context-pos context))
+
+      (setf (antlr-char-stream-state-line state)
+	    (antlr-lexer-context-line context))
+
+      (setf (antlr-char-stream-state-char-position-in-line state) 
+	    (antlr-lexer-context-char-position-in-line context))
+
+      (setf (antlr-lexer-context-last-marker context) 
+	    (antlr-lexer-context-mark-depth context))
+
+      (antlr-lexer-context-mark-depth context))))
+
+
+
+(defun lexer-input-rewind-to (m)
+  (let ((state (nth m (antlr-lexer-context-markers context))))
+
+    ;; restore stream state
+
+    (lexer-input-seek (antlr-char-stream-state-pos state))
+    (setf (antlr-lexer-context-line context)
+	  (antlr-char-stream-state-line state))
+
+    (setf (antlr-lexer-context-char-position-in-line context)
+	  (antlr-char-stream-state-char-position-in-line state))
+
+    (lexer-input-release m)))
+
 
 (defun lexer-input-rewind ()
-  (parser-input-seek (antlr-parser-context-last-marker context)))
+  (lexer-input-rewind-to (antlr-lexer-context-last-marker context)))
 
-(defun lexer-input-seek (p)
-  (setf (antlr-parser-context-pos context) p))
 
+(defun lexer-input-release (m)
+  ;;unwind any other markers made after m and release m
+  (setf (antlr-lexer-context-mark-depth context) m)
+  ;;release this marker
+  (decf (antlr-lexer-context-mark-depth context))
+  )
+
+
+(defun lexer-input-seek (index)
+  "consume() ahead until p==index; can't just set p=index as we must
+   update line and charPositionInLine."
+  (if (<= index (point))
+      (goto-char index) ;; just jump; don't update stream state (line, ...)
+    ;; seek forward, consume until p hits index
+    (while (< (point) index) 
+      (lexer-input-consume))))
 
 (defun lexer-set-type (type)
   (setf (antlr-lexer-context-type context) type))
@@ -337,38 +419,38 @@
   (let ((buffer (generate-new-buffer (generate-new-buffer-name "*antlr string lexing*"))))
     (save-excursion
       (with-current-buffer buffer
-        (insert str)
-        (goto-char (point-min))
-        (lex-buffer name method buffer 0 (buffer-size buffer))
-        (set-buffer-modified-p nil)
-        (kill-buffer buffer)))))
+	(insert str)
+	(goto-char (point-min))
+	(lex-buffer name method buffer 0 (buffer-size buffer))
+	(set-buffer-modified-p nil)
+	(kill-buffer buffer)))))
 
 (defun lex-emit (token)
   (setf (antlr-lexer-context-token context) token))
 
 (defun lex-emit-token ()
   (let ((token (make-common-token
-                :input (current-buffer)
-                :type (antlr-lexer-context-type context)
-                :channel (antlr-lexer-context-channel context)
-                :start (antlr-lexer-context-token-start-char-index context)
-                :stop (point)
-                :line (antlr-lexer-context-token-start-line context)
-                :text (antlr-lexer-context-text context)
-                :char-position-in-line (antlr-lexer-context-token-start-char-position-in-line context))))
+		:input (current-buffer)
+		:type (antlr-lexer-context-type context)
+		:channel (antlr-lexer-context-channel context)
+		:start (antlr-lexer-context-token-start-char-index context)
+		:stop (point)
+		:line (antlr-lexer-context-token-start-line context)
+		:text (antlr-lexer-context-text context)
+		:char-position-in-line (antlr-lexer-context-token-start-char-position-in-line context))))
     (lex-emit token)
     token))
 
 (defun lexer-for-buffer (lexer-name buffer start end)
   (let* ((current-lexer (gethash lexer-name *antlr-runtime-lexers*))
-         (context (make-antlr-lexer-context 
-                   :lexer current-lexer
-                   :input buffer
-                   :input-start start
-                   :input-end end)))
+	 (context (make-antlr-lexer-context 
+		   :lexer current-lexer
+		   :input buffer
+		   :input-start start
+		   :input-end end)))
     (save-excursion
       (with-current-buffer (antlr-lexer-context-input context)
-        (goto-char (antlr-lexer-context-input-start context))
+	(goto-char (antlr-lexer-context-input-start context))
 	(setf (antlr-lexer-context-token context) nil
 	      (antlr-lexer-context-channel context) *antlr-token-default-channel*
 	      (antlr-lexer-context-token-start-char-index context) (point)
@@ -569,8 +651,8 @@
 
 (defmacro defparser (name)
   `(puthash ',name 
-            (make-antlr-parser :name ',name) 
-            *antlr-runtime-parsers*))
+	    (make-antlr-parser :name ',name) 
+	    *antlr-runtime-parsers*))
 
 (defun parser-input-mark ()
   (if (= (antlr-parser-context-pos context) -1) (parser-fill-buffer))

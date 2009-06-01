@@ -878,7 +878,7 @@ cyclicDFA(dfa) ::= <<
      (let ((s-original s))
         (antlr-alt-case s
         <dfa.specialStateSTs:{state |
-        (case <i0> <! compressed special state numbers 0..n-1 !>
+        (<i0> <! compressed special state numbers 0..n-1 !>
             <state>) }; separator="\n">
         )
 <if(backtracking)>
