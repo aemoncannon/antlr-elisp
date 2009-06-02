@@ -6,13 +6,19 @@
       (assert-equal "A control. Should parse silently."
                     nil (do-parse 'full_calc_elispLexer 'full_calc_elispParser 'evaluate "(1)"))
 
-      (assert-equal "Should expect an expression after the first '('.. then go into recovery mode.. then resync on the next ')'."
-                    nil
-		    
-		    (progn
-		      (message "\nExpecting no-viable-alt:")
-		      (do-parse 'full_calc_elispLexer 'full_calc_elispParser 'evaluate "()")))
 
+      (let ((errors (swallowing-recognition-errors 
+		     (do-parse 
+		      'full_calc_elispLexer 
+		      'full_calc_elispParser 
+		      'evaluate "()"))))
+
+	(assert-equal (concat "Should result in 1 recognition error. "
+			      "Should expect an expression after the first '('.. then go into recovery mode.. "
+			      "then resync on the next ')'.")
+		      t
+		      (and (= 1 (length errors))
+			   (equal 'no-viable-alt (car (first errors))))))
       )
 
 

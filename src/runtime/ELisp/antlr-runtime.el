@@ -506,7 +506,9 @@
 
 
 (defun lexer-report-error (re)
-  (display-recognition-error re))
+  (if (boundp '*antlr-swallowed-recogition-errors*)
+      (push re *antlr-swallowed-recogition-errors*)
+    (display-recognition-error re)))
 
 (defun lexer-recover (re)
   "Lexers can normally match any char in it's vocabulary after matching
@@ -904,7 +906,10 @@
    "
   (unless (antlr-parser-context-error-recovery context)
     (setf (antlr-parser-context-error-recovery context) t)
-    (display-recognition-error re)))
+
+    (if (boundp '*antlr-swallowed-recogition-errors*)
+	(push re *antlr-swallowed-recogition-errors*)
+      (display-recognition-error re))))
 
 (defun parser-recover (re)
   "Recover from an error found on the input stream.  Mostly this is
@@ -974,6 +979,15 @@
 
 
 ;; Utilities 
+
+
+(defmacro swallowing-recognition-errors (&rest body)
+  "Collect all recognition errors output withing the dynamic extent of body
+   and return them in a list."
+  `(let ((*antlr-swallowed-recogition-errors* '()))
+     ,@body
+     (reverse *antlr-swallowed-recogition-errors*)
+     ))
 
 
 (defun buffer-from-string (str)
