@@ -484,7 +484,7 @@
 		  (lex-emit-token))
 		(unless (eq (antlr-lexer-context-token context) *antlr-token-skip-token*)
 		  (funcall method (antlr-lexer-context-token context))))
-	    (error
+	    (antlr-error
 	     (lexer-report-error re)
 	     (lexer-recover re)
 	     )))))))
@@ -496,7 +496,7 @@
 	   (success nil))
        (condition-case er
 	   (lexer-call-rule ,synpred-rule-name) ;; can never throw exception
-	 (error
+	 (antlr-error
 	  (throw er "Illegal state! synpreds cannot throw exceptions.")))
        (setq success (not (antlr-lexer-context-failed context)))
        (lexer-input-rewind-to start)
@@ -880,7 +880,7 @@
 	   (success nil))
        (condition-case er
 	   (parser-call-rule ,synpred-rule-name) ;; can never throw exception
-	 (error
+	 (antlr-error
 	  (throw er "Illegal state! synpreds cannot throw exceptions.")))
        (setq success (not (antlr-parser-context-failed context)))
        (parser-input-rewind-to start)

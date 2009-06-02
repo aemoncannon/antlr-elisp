@@ -240,7 +240,7 @@ rule(ruleName,ruleDescriptor,block,emptyRule,description,exceptions,finally,memo
 <if(actions.(actionScope).rulecatch)>
     <actions.(actionScope).rulecatch>
 <else>
-    (error 
+    (antlr-error 
     <if(LEXER)>
       (lexer-report-error re)<\n>
       (lexer-recover re)<\n>
