@@ -1,0 +1,1755 @@
+body {
+    background-image: url(/images/dots_bg.jpg);
+    margin: 0px 0px 0px 0px;
+    padding: 0px 0px 0px 0px;
+    font-family: "arial", "lucida console", "sans-serif";
+    generic-family: "sans-serif";
+}
+
+ul {
+    color: #FFF9BC;
+    font-size: 75%;
+}
+
+p {
+    color: #FFF9BC;
+    font-size: 75%;
+}
+
+b {
+    color: #FFF9BC;
+    font-size: 90%;
+}
+
+form {
+    color: #FFF9BC;
+    font-size: 75%;
+}
+
+a:link, a:visited, a:active { 
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 95%;
+    color: #FFF9BC;
+    outline: none;
+}
+
+a:hover {
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 95%;
+    color: #FFFFFF;
+}
+
+.dottedDivider {
+    margin: 30px 60px 30px 0px;
+    height: 7px; 
+    background-image:  url(/images/dottedDividerRepeat.gif);
+    background-repeat: repeat-x;
+}
+
+.attributes {
+    color: #FFF9BC;
+    font-size: 75%;
+}
+
+/* The red text that informs the user of incorrect form data */
+.formNotice { 
+    padding: 10px 10px 10px 10px;
+    color: #FC9494;
+    font-size: 75%;
+}
+
+.controlPanel{
+    padding: 0px 0px 10px 0px;
+    background-color: #597E66;
+}
+
+.panelContent{
+    padding: 1px 5px 1px 5px;
+    overflow: auto;
+    background-color: #486D55;
+}
+.panelHeader{
+    color: #FFD210;
+    padding: 0px 5px 0px 5px;
+    font-weight: 300;
+    text-align: center;
+    background-color: #597E66;
+}
+
+.utilityForm b{
+}
+
+.utilityForm input,.utilityForm select {
+    width: 120px;
+}
+
+.utilityForm input {
+    background-color: #DDDDDD;
+    border: 1px solid #AAAAAA;
+}
+
+.utilityForm select {
+    background-color: #DDDDDD;
+    border: 1px solid #AAAAAA;
+}
+
+.hasControls {
+    padding: 10px 0px 15px 0px;
+}
+
+.hasControls .subControlPanel {
+    width: 130px;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 0px;
+}
+
+
+.hasControls .shinyButton {
+    margin: 20px auto 0px auto;
+    display: block;
+    width: 130px;
+    text-align: center;
+}
+
+.hasControls .subControlPanel .shinyButton {
+    display: block;
+    width: auto;
+    text-align: center;
+}
+
+.hasControls .subControlPanel select{
+    background-color: #DDDDDD;
+    border: 1px solid #AAAAAA;
+    width: 130px;
+}
+
+.hasControls .subControlPanel input{
+    background-color: #DDDDDD;
+    border: 1px solid #AAAAAA;
+    width: 99px;
+}
+
+.subControlPanel{
+    background-color: #5D866B;
+    border: 1px solid #557F64;
+    color: #ffffff;
+    padding: 5px 5px 5px 5px;
+    margin: 5px 5px 5px 5px;
+    overflow: auto;
+    text-align: left;
+}
+
+.shinyButton:link, .shinyButton:active, .shinyButton:visited {
+    padding: 4px 8px 4px 8px;
+    font-size: 75%;
+    color: #444444;
+    background-color: #DDDDDD;
+    border-bottom: 1px solid #BBBBBB;
+    border-right: 1px solid #BBBBBB;
+    border-top: 1px solid #FFFFFF;
+    border-left: 1px solid #FFFFFF;
+    height: 15px;
+}
+
+.shinyButton:hover{
+    background-color: #CCCCCC;
+    color: #444444;
+    font-size: 75%;
+}
+
+.disabledButton:link, .disabledButton:active, .disabledButton:visited, .disabledButton:hover{
+    padding: 4px 8px 4px 8px;
+    font-size: 75%;
+    color: #888888;
+    background-color: #DDDDDD;
+    border-bottom: 1px solid #BBBBBB;
+    border-right: 1px solid #BBBBBB;
+    border-top: 1px solid #FFFFFF;
+    border-left: 1px solid #FFFFFF;
+    height: 15px;
+}
+
+.attributes td {
+    padding-top: 15px;
+    padding-right: 10px;
+}
+
+.insetPanel {  
+    background-color: #85C666;
+    text-align: center;
+}
+.insetPanel p{
+    font-size: 85%;
+    margin: 10px 10px 10px 10px;
+}
+
+.deleteLink:link, .deleteLink:visited, .deleteLink:active { 
+    color: #F2918C;
+}
+
+.deleteLink:hover {
+    color: #F7B9B7;
+}
+
+
+/********************** Homepage images ******************/
+
+#cbLogo {
+    position: absolute;
+    left: 544px;
+    top: 23px;
+}
+
+#rightFlowers {
+    position:absolute;
+    top: 140px;
+    left: 760px;
+}
+
+#leftFlowers {
+    position:absolute;
+    top: 160px;
+    left: 4px;
+}
+
+#topLeftFuzzy{
+    position:absolute;
+    left: 5px;
+    top: 29px;
+}
+
+
+/********************** Primary Containers ******************/
+
+/* Outermost panel, contains all content. */
+#mainPanel {
+    background-color: #69AA61;
+    background-repeat: repeat-x;
+    background-image: url(/images/bg_gradient.jpg);
+    position:absolute;
+    left: 50%;
+    width: 1040px;
+    margin: 0px 0px 10px -520px;
+    padding: 0px 0px 0px 0px;
+    top: 10px;
+    border-bottom: 1px solid #FF9F51;
+}
+
+#main {
+    padding: 1px 0px 200px 1px;
+    margin: 0px 0px 0px 0px;
+}
+
+/* The central content panel */
+#contentPanel { 
+    position: relative;
+    top: 96px;
+    padding: 0px 0px 0px 0px;
+    margin: 0px 0px 0px 70px;
+    width: 810px;
+    background-color: #91DD6C;
+}
+
+/****************** Advertisments *********************/
+#adColumn { 
+    position: absolute;
+    top: 103px;
+    left: 890px;
+    width: 140px;
+    margin: 0px 0px 0px 0px;
+    padding: 0px 0p 0px 0px;
+}
+
+#adColumn table { 
+    background-image: url(/images/ad_column_gradient.jpg);
+    background-repeat: repeat-x;
+    background-color: #69AA61;
+    width: 140px;
+}
+
+#adColumn table td { 
+    background-color: #69AA61;
+    padding: 2px 2px 0px 2px;
+}
+
+/********************** Main Menu ******************/
+
+#mainMenu {
+    /*This is the horizontal list of links on top*/
+    position: absolute;
+    font-size: 100%;
+    height: 20px;
+    width: 1000px;
+    top: 5px;
+    left: 23px;
+}
+#mainMenu ul {
+    list-style: none;
+    margin: 0px 0px 0px 0px;
+    padding: 0px 0px 0px 0px;
+}
+
+#mainMenu a:link, #mainMenu a:visited{
+    color: #467744;
+    padding: 0px 0px 0px 0px;
+    margin: 0px 0px 0px 0px;
+}
+
+#mainMenu a:hover{
+    color: #83C48F;
+    text-decoration: none;
+    padding: 0px 0px 0px 0px;
+    margin: 0px 0px 0px 0px;
+}
+
+#mainMenu li {
+    position: relative;
+    color: #60A15F;
+    display: inline;
+    list-style-type: none;
+    margin: 0px 10px 0px 0px;
+    padding: 0px 0px 0px 0px;
+}
+
+/**** The money display *******/
+
+#moneyDisplay {
+    font-size: 120%;
+    font-weight: bold;
+    color: #467744;
+}
+
+.moneyUnit {
+    font-size: 75%;
+    margin-left: 5px;
+}
+
+
+
+
+/********** Footer ***********/
+
+#footerPanel {  
+    position: relative;
+    top: 103px;
+    margin: 0px 70px 0px 90px;
+}
+
+#footerPanel p{  
+    position: absolute;
+    width: 800px;
+    color: #467744;
+}
+
+#footerPanel a{
+    color: #467744;
+}
+
+/********************** Public Farm Page ******************/
+
+#contentForFarm.publicUser {
+    height: 600px;
+}
+
+#contentForFarm.publicUser #greeting {
+    margin-left: 200px;
+}
+
+#contentForFarm.publicUser #greeting p{
+    color: #467744;
+    font-size: 100%;
+}
+
+#contentForFarm.publicUser #greeting p b{
+    color: #467744;
+    font-size: 100%;
+}
+
+
+
+
+
+
+
+/********************** Farm Page ******************/
+
+#contentForFarm{
+    height: 805px;
+}
+
+#contentForFarm.foreignUser {
+    height: 830px;
+}
+
+#contentForFarm.publicUser {
+    height: 600px;
+}
+
+
+/* This contains the flash movie for another persons farm */
+#contentForFarm.foreignUser #creatureFarm{  
+    position:absolute;
+    top: 150px;
+    left: 160px;    
+    height: 450px;
+    width: 635px;
+}
+
+/* This contains the flash movie for the farm */
+#contentForFarm #creatureFarm{  
+    position:relative;
+    top: 10px;
+    left: 160px;    
+    height: 450px;
+    width: 635px;
+}
+
+#contentForFarm.foreignUser #welcomePanel{
+    position: absolute;
+    height: 100px;
+    left: 161px;
+    top: 12px;
+    width: 615px;
+    background-color: #ffffff;
+    border: 2px solid #60a15f;
+    padding: 5px 5px 5px 5px;
+    overflow: auto;
+}
+
+#contentForFarm.foreignUser #welcomePanel b {
+    color: #222222;
+}
+
+#contentForFarm.foreignUser #welcomePanel p {
+    margin-left: 10px;
+    color: #222222;
+}
+
+#contentForFarm #farmProposalsPanel{
+    position: absolute;
+    top: 385px;
+    width: 220px;
+    left: -71px;
+}
+
+#contentForFarm #farmProposals{
+    padding: 5px 0px 0px 0px;
+    height: 165px;
+}
+
+#contentForFarm #farmProposalsPanel .panelHeader .deleteLink{
+    font-size: 70%;
+}
+
+#contentForFarm #farmProposals ul{
+    margin: 0px 0px 0px 0px;
+    padding: 5px 20px 0px 25px;
+}
+
+#contentForFarm #farmProposals li{
+    margin: 10px 0px 0px 0px;
+}
+
+#contentForFarm #farmProposals .breedingProposalListItem {
+    list-style-image: url(/images/heart_bullet.jpg);
+}
+
+#contentForFarm #farmProposals .purchaseProposalListItem {
+    list-style-image: url(/images/dollar_bullet.jpg);
+}
+
+#contentForFarm #farmProposals .giftProposalListItem {
+    list-style-image: url(/images/gift_bullet.jpg);
+}
+
+#contentForFarm #favoriteFarmsPanel{
+    position: absolute;
+    left: 580px;
+    top: 475px;
+    width: 220px;
+}
+
+#contentForFarm #favoriteFarms{
+    margin: 0px 0px 0px 0px;
+    padding: 3px 0px 0px 0px;
+    height: 75px;
+}
+
+#contentForFarm #favoriteFarms ul {
+    list-style-image: url(/images/star-bullet.gif);
+    padding-left: 30px;
+}
+
+#contentForFarm #favoriteFarms ul li{
+    margin-bottom: 5px;
+}
+
+#contentForFarm #favoriteFarms ul a:link, #contentForFarm #favoriteFarms ul a:visited, #contentForFarm #favoriteFarms ul a:active {
+    font-size: 80%;
+}
+
+#contentForFarm #favoriteFarmsList  .abandoned:link, #contentForFarm #favoriteFarmsList  .abandoned:visited, #contentForFarm #favoriteFarmsList  .abandoned:active {
+    color: #C8C391;
+}
+
+#contentForFarm #favoriteFarmsList  .stagnant:link, #contentForFarm #favoriteFarmsList  .stagnant:visited, #contentForFarm #favoriteFarmsList  .stagnant:active {
+    color: #E0DBA4;
+}
+
+#contentForFarm #favoriteFarmsList  .notActive:link, #contentForFarm #favoriteFarmsList  .notActive:visited, #contentForFarm #favoriteFarmsList  .notActive:active {
+    color: #EDE8B0;
+}
+
+#contentForFarm #favoriteFarmsList  .active:link, #contentForFarm #favoriteFarmsList  .active:visited, #contentForFarm #favoriteFarmsList  .active:active {
+    color: #FFF9BC;
+}
+
+#contentForFarm #favoriteFarmsList  .currentlyActive:link, #contentForFarm #favoriteFarmsList  .currentlyActive:visited, #contentForFarm #favoriteFarmsList  .currentlyActive:active {
+    color: #FFFFDD;
+}
+
+#contentForFarm.foreignUser #favoriteFarmsPanel{
+    position: absolute;
+    left: -71px;
+    top: 385px;
+    width: 220px;
+}
+
+#contentForFarm.foreignUser #favoriteFarms{
+    height: 155px;
+}
+
+#contentForFarm.foreignUser #favoriteFarms ul li{
+    margin-bottom: 5px;
+}
+
+
+/*The descriptive panel that appears when a creature is clicked*/
+#contentForFarm #creatureInspectorPanel { 
+    position: absolute;
+    left: -71px;
+    top: 20px;
+    width: 220px;
+}
+
+#contentForFarm #creatureInspector {
+    height: 320px;
+    overflow: hidden;
+    padding-left: 20px;
+    padding-top: 10px;
+}
+
+#contentForFarm #creatureInspector .attributes{
+    height: 270px;
+    overflow: hidden;
+}
+
+#contentForFarm #systemMessagesPanel{
+    position: absolute;
+    left: 165px;
+    top: 475px;
+    width: 400px;
+}
+
+#contentForFarm #systemMessages{
+    padding: 0px 0px 0px 0px;
+    height: 80px;
+}
+
+#contentForFarm #systemMessages .messageOdd{
+    padding: 5px 0px 5px 15px;
+    background-color: #486D55;
+}
+
+#contentForFarm #systemMessages .messageEven{
+    padding: 5px 0px 5px 15px;
+    background-color: #446650;
+}
+
+#contentForFarm #systemMessages .messageTime{
+    color: #DDD7BA;
+    font-size: 65%;
+    padding: 5px 0px 5px 15px;
+}
+
+
+/* Wider comment panel for my farm. */
+#contentForFarm #commentsPanel{
+    position: absolute;
+    left: 10px;
+    top: 598px;
+    width: 790px;
+}
+
+#contentForFarm.foreignUser #commentsPanel{
+    position: absolute;
+    left: 10px;
+    top: 610px;
+    width: 490px;
+}
+
+#contentForFarm #commentsPanel #comments{
+    /*wider comment panel for my_farm*/
+    padding: 0px 0px 0px 0px;
+    height: 173px;
+    
+}
+
+#contentForFarm.foreignUser #commentsPanel #comments{
+    padding: 0px 0px 0px 0px;
+    height: 185px;
+    
+}
+
+#contentForFarm #addCommentPanel{
+    position: absolute;
+    left: 510px;
+    top: 610px;
+    width: 290px;
+}
+
+#contentForFarm.foreignUser #addCommentPanel .panelHeader .deleteLink{
+    font-size: 70%;
+}
+
+#contentForFarm #addComment{
+    height: 184px;
+    text-align: center;
+}
+
+
+#contentForFarm #addComment .shinyButton {
+    padding: 5px 30px 5px 30px;
+}
+
+#contentForFarm #addComment #genCommentForm {
+}
+
+#contentForFarm #addComment #genCommentForm #templateSelect {
+    width: 250px;
+}
+
+#contentForFarm #addComment #genCommentForm .templateOptionSelect {
+    margin-left: 5px;
+    margin-right: 5px;
+    max-width: 100px;
+}
+
+#contentForFarm #addComment #genCommentForm #customiseControls {
+    margin-top: 20px;
+}
+
+#contentForFarm #commentsPanel .loadingMsg {
+    padding: 10px 5px 0px 15px;
+    color: #FFF9BC;
+    font-size: 80%;
+}
+
+#contentForFarm #commentsPanel .smallLoadingMsg {
+    padding: 2px 5px 0px 5px;
+    color: #FFF9BC;
+    font-size: 80%;
+}
+
+#contentForFarm #commentsPanel .comment{
+    left: 0px;
+    margin-left: 0px;
+    border-width: 0px;
+    
+}
+#contentForFarm #commentsPanel .comment img{
+    border: 1px solid #DDD7BA;
+    background-color: #ffffff;
+}
+
+#contentForFarm #commentsPanel .comment p{
+    
+    padding: 0px 5px 0px 15px;
+}
+
+#contentForFarm #commentsPanel .commentInfo{
+    color: #DDD7BA;
+    font-size: 65%;
+    margin-left: 15px;
+}
+
+#contentForFarm #commentsPanel .commentOdd{
+    padding: 5px 0px 5px 0px;
+    background-color: #486D55;
+}
+
+#contentForFarm #commentsPanel .commentEven{
+    padding: 5px 0px 5px 0px;
+    background-color: #446650;
+}
+
+#contentForFarm.foreignUser #addCommentPanel #birthdate{
+    padding: 0px 20px 5px 20px;
+    height: 180px;
+}
+
+#contentForFarm.foreignUser #addCommentPanel #birthdate p{
+    font-size: 93%;
+}
+
+#contentForFarm.foreignUser #addCommentPanel #birthdate form select{
+    margin-left: 10px;
+    margin-bottom: 2px;
+}
+
+
+#contentForFarm.foreignUser #addCommentPanel #birthdate .shinyButton{
+    display: block;
+    margin-top: 5px;
+    width: 30px;
+    height: 14px;
+}
+
+
+#contentForFarm #menuBar {
+    /*This is the horizontal list of links on top*/
+    position: absolute;
+    height: 25px;
+    top:  -25px;
+    left: 125px;
+    margin: 0px 0px 0px 0px;
+    width: 370px;
+}
+
+#contentForFarm.foreignUser #menuBar{
+    top: -45px;
+}
+
+#contentForFarm.foreignUser #menuBar #selectFarmForm #userLabel{
+    font-size: 100%;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+#contentForFarm #menuBar #selectFarmForm #farmSelectionLabel{
+    font-size: 100%;
+    font-weight: bold;
+}
+
+#contentForFarm #menuBar #selectFarmForm select{
+    background-color: #EEEEEE;
+    border: 1px solid #659c63;
+    width: 150px;
+    margin-left: 5px;
+}
+
+#contentForFarm.foreignUser #menuBar #addFavoriteLink{
+    position: relative;
+    top: -2px;
+    background-image: url(/images/bookmark.gif);
+    background-repeat: no-repeat;
+    padding-left: 18px;
+    padding-bottom: 20px;
+
+}
+
+#contentForFarm.foreignUser #menuBar #addFavoriteLink:hover{
+    background-image: url(/images/bookmark_highlight.gif);
+}
+
+#contentForFarm.foreignUser #isModeratorLabel {
+    /*This is the horizontal list of links on top*/
+    position: absolute;
+    height: 25px;
+    top:  -20px;
+    left: 820px;
+    font-size: 80%;
+    font-weight: bold;
+    color: #467744;
+    width: 100px;
+}
+
+
+
+/********************** Index Page ******************/
+
+#contentForIndex{
+    background-repeat: repeat-all;
+    background-image: url(/images/gradient.jpg);
+    top: 0px;
+}
+
+#contentForIndex #welcomeFlash{
+
+    /* Manually center this. IE is being a bitch */
+    margin-left: 1px; 
+
+    border: 2px solid #D98638;
+    width: 750px;
+    height: 125px; 
+}
+
+#contentForIndex #lowerAdvert{
+    border: 2px solid #D98638;
+}
+
+#contentForIndex #home_path{
+    position: relative;
+    top: 220px;
+    left: 212px;
+}
+
+#contentForIndex #indexTable{ 
+    width: 800px;
+    margin: auto;
+}
+
+#contentForIndex #indexTable td{
+    border: 2px solid #FFD210;
+    vertical-align: top;
+    background-color: #E8FE75;
+    width: 266px;
+    overflow: hidden;
+}
+#contentForIndex #indexTable p{
+    color: #467744;
+    font-size: 8pt;
+    font-family: Arial;
+    font-weight: bold;
+}
+#contentForIndex #indexTable .tableLinks:link, .tableLinks:visited, .tableLinks:active { 
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 115%;
+    color: #FF5336;
+    outline: none;
+}
+#contentForIndex #indexTable .tableLinks:hover {
+    text-decoration: none;
+    font-family: Arial;
+    font-weight: bold;
+    font-size: 115%;
+    color: #0099FF;
+}
+#contentForIndex #indexTable h2{
+    color: #000000;
+    font-family: Comic Sans MS;
+    font-weight: bold;
+    text-align: center;
+}
+#contentForIndex #indexTable h3{
+    color: #467744;
+    font-family: Comic Sans MS;
+    font-weight: bold;
+    text-align: center;
+}
+#contentForIndex #indexTable h4{
+    color: #467744;
+    font-family: Comic Sans MS;
+    font-weight: bold;
+    text-align: center;
+}
+#contentForIndex #indexTable b{
+    color: #000000;
+    font-family: Comic Sans MS;
+    font-size: 8pt;
+}
+
+#contentForIndex #indexTable .newsItem a{
+    color: #E75A08;
+    font-family: Comic Sans MS;
+}
+
+#contentForIndex #indexTable .newsItem{
+    width: 250px;
+    color: #467744;
+    font-family: Arial;
+    font-size: 8pt;
+    overflow: hidden;
+}
+
+#contentForIndex #indexTable .newsTitle{
+    color: #000000;
+    font-family: Arial;
+    font-size: 8pt;
+    font-weight: bold;
+}
+
+/********************** View Creature Page ******************/
+
+#contentForCreature{
+    padding: 5px 1px 120px 1px;
+}
+
+#contentForCreature #heredityTable td{
+    padding-top: 0px;
+}
+
+#contentForCreature #viewCreatureViewer {  
+    position: absolute;
+    top: 20px;
+    left: 440px;
+    width: 340px;
+    background-color: #85C666;
+    text-align: center;
+}
+
+#contentForCreature #creatureInspectorCloserPanel {
+    position: relative;
+    left: 20px;
+    top: 10px;
+    width: 400px;
+}
+
+#contentForCreature #creatureInspectorCloser {
+    overflow: hidden;
+    padding-bottom: 40px;
+    padding-left: 20px;
+    padding-top: 10px;
+    padding-right: 20px;
+}
+#contentForCreature #creatureInspectorCloser .breedingProposalListItem {
+    list-style-image: url(/images/light_heart_bullet.jpg);
+}
+
+#contentForCreature #creatureInspectorCloser .purchaseProposalListItem {
+    list-style-image: url(/images/light_dollar_bullet.jpg);
+}
+
+#contentForCreature #addEntryForm {
+    margin-left: 6px;
+}
+
+#contentForCreature #addEntryForm textarea {
+    width: 340px;
+}
+
+#contentForCreature #addEntryForm a {
+    font-size: 90%;
+    margin-left: 3px;
+    margin-top: 4px;
+}
+
+#contentForCreature #creatureControlsPanel { 
+    position: absolute;
+    top: 250px;
+    left: 440px;
+    width: 340px;
+}
+
+#contentForCreature .genomeScroller{
+    height: 100px;
+}
+
+#contentForCreature #proposalsPanel{
+    height: 50px;
+}
+#contentForCreature #creatureDiaryPanel{ 
+    padding: 3px 3px 3px 3px;
+}
+
+#contentForCreature #creatureDiaryPanel ul {
+    margin: 0px 0px 0px 0px;
+    padding: 0px 0px 0px 0px;
+}
+
+#contentForCreature #creatureDiaryPanel li{
+    padding: 10px 10px 10px 10px;
+    margin: 0px 0px 0px 0px;
+    list-style-type: none;
+}
+
+#contentForCreature #creatureDiaryPanel .creatureDiaryEntryOdd{
+    background-color: #446650;
+}
+
+#contentForCreature #creatureDiaryPanel .creatureDiaryEntryEven{
+    background-color: #486D55;
+}
+
+#contentForCreature #creatureDiaryPanel li .body{
+    font-size: 100%;
+}
+
+#contentForCreature #creatureDiaryPanel li .entryInfo{
+    font-size: 75%;
+    color: #FFFFFF;
+    padding: 0px 0px 10px 0px;
+}
+
+
+/********************** Find a Mate page ******************/
+
+#contentForFindMate{
+    height: 930px;
+}
+
+#contentForFindMate #mate1View{
+    position: absolute;
+    top: 50px;
+    left: 70px;
+}
+
+#contentForFindMate #viewingMateView{
+    position: absolute;
+    left: 540px;
+    top: 50px;
+}
+
+#contentForFindMate #selectCreatureForm{
+    position: absolute;
+    left: 550px;
+    top: 60px;
+}
+
+#contentForFindMate #selectCreatureForm select {
+    width: 140px;
+}
+
+#contentForFindMate #proposalCreatureViewPanel{
+    position: absolute;
+    top: 280px;
+    left: 70px;
+    width: 300px;
+}
+#contentForFindMate #proposalCreatureView2Panel{
+    position: absolute;
+    top: 280px;
+    left: 440px;
+    width: 300px;
+}
+
+#contentForFindMate #proposalButtons {
+    position: absolute;
+    left: 280px;
+    top: 50px;
+    width: 250px;
+    background-image: url("/images/big_heart.gif");
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+#contentForFindMate #proposalButtons .content{
+    height: 130px;
+    padding-top: 50px;
+}
+
+#contentForFindMate #proposalButtons .shinyButton{
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 0px;
+    margin-bottom: 0px;
+    display: block;
+    width: 120px;
+}
+
+/********************** Breeding Proposal Page ******************/
+
+#contentForBreedingProposal{
+    height: 930px;
+}
+
+#contentForBreedingProposal #heart{
+    position:absolute;
+    top: 120px;
+    left: 390px;
+}
+
+#contentForBreedingProposal #mate1View{
+    position: absolute;
+    top: 50px;
+    left: 70px;
+    width: 200px;
+}
+#contentForBreedingProposal #mate2View{
+    position: absolute;
+    left: 540px;
+    top: 50px;
+    width: 200px;
+}
+
+#contentForBreedingProposal #proposalCreatureViewPanel{
+    position: absolute;
+    top: 280px;
+    left: 70px;
+    width: 300px;
+}
+#contentForBreedingProposal #proposalCreatureView2Panel{
+    position: absolute;
+    top: 280px;
+    left: 440px;
+    width: 300px;
+}
+#contentForBreedingProposal #proposalCreatureView{
+    height: 440px;
+    padding-left: 20px;
+    padding-right: 20px;
+}
+#contentForBreedingProposal #proposalCreatureView2{
+    height: 440px;
+    padding-left: 20px;
+    padding-right: 20px;
+}
+#contentForBreedingProposal #proposalButtons {
+    position: absolute;
+    left: 280px;
+    top: 50px;
+    width: 250px;
+    background-image: url("/images/big_heart.gif");
+    background-position: center;
+    background-repeat: no-repeat;
+}
+#contentForBreedingProposal #proposalButtons p{
+    height: 130px;
+    padding-top: 50px;
+}
+
+#contentForBreedingProposal #proposalButtons .shinyButton{
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 0px;
+    margin-bottom: 0px;
+    display: block;
+    width: 120px;
+}
+
+
+/********************** Gift proposal page ******************/
+
+#contentForGiftProposal {
+    text-align: center;
+    padding: 20px 0px 400px 0px;
+}
+
+#contentForGiftProposal #giftControlsPanel{
+    width: 300px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-bottom: 100px;
+}
+
+#contentForGiftProposal #giftControlsPanel a{
+}
+
+#contentForGiftProposal #giftControlsPanel #giftTitle{
+    margin-bottom: 80px;
+}
+
+#contentForGiftProposal #giftControlsPanel #giftList{
+    list-style-type: none;
+    position: relative;
+    margin-left: -40px;
+}
+
+#contentForGiftProposal #giftControlsPanel #giftList .giftCreature {
+}
+
+#contentForGiftProposal #giftControlsPanel #giftList .giftAccessory {
+}
+
+#contentForGiftProposal #giftControlsPanel #giftList .giftGroupArity {
+    color: #55904D;
+    float: left;
+    margin: 50px 0px 0px 20px;
+    font-size: 100%;
+}
+
+#contentForGiftProposal #giftControlsPanel #giftList .giftCreatureName {
+    color: #55904D;
+    float: left;
+    margin: 110px 0px 0px 20px;
+    font-size: 100%;
+}
+
+
+
+/********************** Purchase Proposal Page ******************/
+
+#contentForPurchaseProposal {
+    text-align: center;
+    padding: 20px 0px 10px 0px;
+}
+
+#contentForPurchaseProposal #purchaseControlsPanel{
+    width: 300px;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 10px;
+}
+
+#contentForPurchaseProposal #purchaseCreaView{
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 10px;
+    width: 300px;
+}
+
+#contentForPurchaseProposal #purchaseCreatureViewPanel{
+    margin-left: auto;
+    margin-right: auto;
+    width: 300px;
+    text-align: left;
+}
+
+#contentForPurchaseProposal #purchaseCreatureView{
+    padding-left: 20px;
+    padding-right: 20px;
+}
+
+
+/********************** Store Page ******************/
+
+#contentForStore{
+    margin: 0px 0px 0px 0px;
+    padding: 15px 0px 15px 0px;
+    text-align: center;
+}
+
+#contentForStore #storePanel{
+    margin: 0px 0px 0px 15px;
+    width: 763px;
+    padding: 10px 5px 150px 5px;
+    background-color: #886A4E;
+    border: 2px solid #D98638;
+    text-align: center;
+}
+
+#contentForStore #storePanel #currentCategory a{
+    color: #ffffff;
+}
+
+#contentForStore #storeDescription{
+    text-align: center;
+    margin-top: -15px;
+}
+
+#contentForStore #storeDescription p{
+    font-size: 100%;
+}
+
+#contentForStore #storePageControls{
+    text-align: center;
+}
+
+#contentForStore #storePageControls #prevEntriesLink{ 
+    width: 240px;
+}
+
+#contentForStore #storePageControls #allEntriesLinks{ 
+    width: 260px;
+}
+
+#contentForStore #storePageControls #nextEntriesLink{ 
+    width: 250px;
+}
+
+#contentForStore #storePageControls #selectedPageLink{ 
+    font-size: 70%;
+}
+
+#contentForStore #itemTable{
+    margin-top: 20px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+#contentForStore #itemTable td{
+    padding: 5px 5px 5px 5px;
+    background-color: #9B7A59;
+    border: 1px solid #D98638;
+    color: #FFF9BC;
+    width: 220px;
+    text-align: center;
+}
+
+#contentForStore #itemTable p.description{
+    display: inline-block;
+    margin: 0px 20px 30px 25px;
+    text-align: left;
+}
+
+#contentForStore .purchaseForm input {
+    width:30px;
+}
+
+#contentForStore .purchaseForm select {
+    width: 40px;
+}
+
+#contentForStore .purchaseForm {
+}
+
+#contentForStore #itemTable td b{
+    color: #FFF9BC;
+}
+
+#contentForStore #purchaseButton{
+    font-size: 120%;
+    font-weight: 800;
+}
+
+#contentForStore #categoryTable {
+    width: 100%;
+    text-align: center;
+}
+
+
+
+/******* Find a farm *******/
+
+#contentForFindAFarm{
+    padding: 20px 0px 200px 0px;
+}
+
+#contentForFindAFarm .panel {
+    margin: 10px 150px 20px 150px;
+    padding: 10px 10px 10px 10px;
+    background-color: #486D55;
+    border: 1px solid #FFD210;
+    color: #FFF9BC;
+    font-size: 76%;
+}
+
+#contentForFindAFarm ul{
+    font-size: 100%;
+}
+#contentForFindAFarm ul li{
+    margin-bottom: 10px;
+}
+
+/******* Family Tree ******/
+
+#contentForFamilyTree{
+    height: 700px;
+}
+#contentForFamilyTree #creature {
+    position: absolute;
+    left: 305px;
+    top: -10px;
+}
+#contentForFamilyTree #mommy{
+    position: absolute;
+    left: 145px;
+    top: 190px;
+}
+#contentForFamilyTree #daddy{
+    position: absolute;
+    left: 455px;
+    top: 190px;
+}
+#contentForFamilyTree #momsMom{
+    position: absolute;
+    left: 45px;
+    top: 400px;
+}
+#contentForFamilyTree #momsDad{
+    position: absolute;
+    left: 225px;
+    top: 400px;
+}
+#contentForFamilyTree #dadsMom{
+    position: absolute;
+    left: 365px;
+    top: 400px;
+}
+#contentForFamilyTree #dadsDad{
+    position: absolute;
+    left: 555px;
+    top: 400px;
+}
+#contentForFamilyTree .nameLabel{
+    position: absolute;
+    top: 170px;
+    left: 75px;
+    color: #69a660;
+}
+
+#contentForFamilyTree #arrows1 {
+    position: absolute;
+    top: 190px;
+    left: 345px;
+}
+
+#contentForFamilyTree #arrows2{
+    position: absolute;
+    top: 400px;
+    left: 185px;
+}
+
+#contentForFamilyTree #arrows3 {
+    position: absolute;
+    top:  400px;
+    left: 495px;
+}
+
+/******** Settings Page **********/
+
+#contentForSettings{
+    padding: 10px 0px 20px 0px;
+}
+
+#contentForSettings form{
+    margin: 15px 150px 0px 150px;
+    padding: 10px 10px 10px 10px;
+    background-color: #486D55;
+    border: 1px solid #FFD210;
+    color: #FFF9BC;
+}
+
+#contentForSettings #updateEmailForm input{ 
+    width: 200px;
+}
+
+#contentForSettings #blockUserForm ul{
+    font-size: 100%;
+}
+
+/******** FAQ **********/
+
+#contentForFaq{
+    margin: 0px 0px 0px 0px;
+    padding: 15px 0px 15px 0px;
+    text-align: center;
+}
+
+
+
+#contentForFaq #faqPanel {
+    margin: 0px 0px 0px 15px;
+    width: 763px;
+    padding: 10px 5px 150px 5px;
+    background-color: #886A4E;
+    border: 2px solid #D98638;
+    text-align: center;
+}
+
+
+#contentForFaq #faqList {
+    font-size: 90%;
+    margin: 20px 80px 0px 40px;
+    list-style-type: none;
+}
+
+#contentForFaq #faqList li {
+    margin-bottom: 50px;
+    text-align: left;
+}
+
+
+#contentForFaq #faqList li .title {
+    font-size: 115%;
+    font-weight: bold;
+    list-style-type: none;
+    color: #ffffff;
+}
+
+
+#contentForFaq #faqList li p {
+    color: #FFF9BC;
+    font-size: 105%;
+    margin-left: 10px;
+}
+
+#contentForFaq #faqList li b {
+    color: #ffffff;
+}
+#contentForFaq #faqList li a:link, #contentForFaq #faqList li a:visited, #contentForFaq #faqList li a:active { 
+    text-decoration: underline;
+    font-weight: bold;
+    color: #ffffff;
+    outline: none;
+}
+
+/******** Privacy Policy **********/
+
+#contentForPrivacyPolicy{
+    margin: 0px 0px 0px 0px;
+    padding: 15px 0px 15px 0px;
+    text-align: center;
+}
+
+#contentForPrivacyPolicy #policyPanel {
+    margin: 0px 0px 0px 15px;
+    width: 763px;
+    padding: 30px 5px 150px 5px;
+    background-color: #886A4E;
+    border: 2px solid #D98638;
+    text-align: center;
+    font-size: 120%;
+}
+
+
+#contentForPrivacyPolicy #policyPanel li p {
+    color: #FFF9BC;
+    margin-left: 10px;
+}
+
+#contentForPrivacyPolicy #policyPanel li b {
+    color: #ffffff;
+}
+#contentForPrivacyPolicy #policyPanel li a:link, #contentForPrivacyPolicy #policyPanel li a:visited, #contentForPrivacyPolicy #policyPanel li a:active { 
+    text-decoration: underline;
+    font-weight: bold;
+    color: #ffffff;
+    outline: none;
+}
+
+#contentForPrivacyPolicy ul {
+    margin-right: 30px;
+    list-style: none;
+}
+
+#contentForPrivacyPolicy li {
+    text-align: left;
+    margin-bottom: 20px;
+}
+
+
+
+/******* Manage Farms Page ******/
+
+#contentForManageFarms{
+    padding: 10px 0px 200px 55px;
+}
+
+#contentForManageFarms #farmTable{
+}
+
+#contentForManageFarms p { 
+    font-size: 90%;
+    color: #486d55;
+}
+
+#contentForManageFarms .farmHeading a{
+    font-size: 95%;
+    color: #486d55;
+}
+
+
+#contentForManageFarms #dropTable {
+    width: 590px;
+}
+
+#contentForManageFarms .dropControl{
+    text-align: center;
+    width: 190px;
+}
+
+#contentForManageFarms .dropControl ul{
+    list-style: none;
+    margin: 5px 10px 20px 10px;
+    padding: 0px 0px 0px 0px;
+}
+
+#contentForManageFarms .dropControl b {
+    color: #9CED74;
+}
+
+#contentForManageFarms .welcomeTextArea {
+    width: 300px;
+}
+
+#contentForManageFarms .urlTextArea {
+    width: 300px;
+}
+
+#contentForManageFarms .farmPanelNotice {
+    font-size: 70%;
+    color: #9C1F1F;
+    padding: 0px 0px 0px 0px;
+    margin: 0px 0px 0px 0px;
+}
+
+#contentForManageFarms #orphanAccessories {
+    padding: 15px 0px 15px 0px;
+}
+
+
+#contentForManageFarms #currentGift, #salePanel{
+    padding: 10px 0px 10px 0px;
+}
+
+#contentForManageFarms #currentGift a, #salePanel a{
+    color: #CCF2F3;
+}
+
+#contentForManageFarms .creature, .accessory {
+    position: relative;
+    z-index: 1000;
+    margin: auto;
+    text-align: center;
+    width: 100%;
+    outline: none;
+}
+
+#contentForManageFarms .creature span, .accessory span{
+    cursor: move;
+    outline: none;
+    color: #FFF9BC;
+}
+
+#contentForManageFarms .farmManagementPanel {
+}
+
+#contentForManageFarms .farmManagementPanelContent{
+    width: 300px;
+    text-align: center;
+}
+
+#contentForManageFarms .farmManagementPanel ul{
+    z-index: 1000;
+    list-style: none;
+    margin: auto;
+    padding: 0px 0px 0px 0px;
+}
+
+#contentForManageFarms .farmManagementPanel table{
+    z-index: 1000;
+    margin: auto;
+}
+
+#contentForManageFarms .farmManagementPanel b{
+    color: #FFF9BC;
+    
+}
+
+#contentForManageFarms #farmsControlsPanel {
+    margin-left: 250px;
+    width: 200px;
+}
+
+#contentForManageFarms .farmControlLink{ 
+    margin-left: 8px;
+}
+
+#contentForManageFarms .farmControlLink:link,
+#contentForManageFarms .farmControlLink:active,
+#contentForManageFarms .farmControlLink:visited
+{
+    color: #9C1F1F;
+    font-size: 75%;
+}
+#contentForManageFarms .farmControlLink:hover
+{
+    color: #F95050;
+    font-size: 75%;
+}
+
+/******* Visit the Wild ******/
+
+#contentForVisitWild{
+    padding: 10px 0px 84px 84px;
+}
+
+#contentForVisitWild #worldViewer {
+    width: 635px;
+}
+
+/******* New User Page *******/
+
+#contentForNewUser{
+    padding: 25px 0px 300px 0px;
+}
+
+#contentForNewUser #newUserForm{
+    margin: 70px 150px 0px 150px;
+    padding: 10px 10px 10px 10px;
+    background-color: #486D55;
+    border: 1px solid #FFD210;
+    color: #FFF9BC;
+}
+
+#contentForNewUser #newUserForm #emailField{
+    width: 170px;
+}
+
+#contentForNewUser #newUserFuzzy{
+    margin: 0px 20px 0px 60px;
+}
+
+
+/******** Login Page **********/
+
+#contentForLogin{
+    padding: 25px 0px 300px 0px;
+}
+
+#contentForLogin #loginForm{
+    margin: 70px 150px 0px 150px;
+    padding: 10px 10px 10px 10px;
+    background-color: #486D55;
+    border: 1px solid #FFD210;
+    color: #FFF9BC;
+}
+
+#contentForLogin #turtleLoginImage{
+    margin: 0px 20px 0px 60px;
+}
+
+/******** Password Recovery Page **********/
+
+#contentForRecoverPassword{
+    padding: 25px 0px 300px 0px;
+}
+
+#contentForRecoverPassword #recoverPasswordForm{
+    margin: 70px 150px 0px 150px;
+    padding: 10px 10px 10px 10px;
+    background-color: #486D55;
+    border: 1px solid #FFD210;
+    color: #FFF9BC;
+}
+
+
+/******** Screenshots Page **********/
+
+
+#contentForScreenshots{
+    margin: 0px 0px 0px 0px;
+    padding: 15px 0px 15px 0px;
+    text-align: center;
+}
+
+#contentForScreenshots #screenshotPanel {
+    margin: 0px 0px 0px 15px;
+    width: 763px;
+    padding: 5px 5px 50px 5px;
+    background-color: #886A4E;
+    border: 2px solid #D98638;
+    text-align: center;
+}
+
+#contentForScreenshots #screenshotPanel img {
+    border: 2px solid #D98638;
+}
+
+#contentForScreenshots #descText {
+    font-size: 80%;
+}
+
+
+/*******************  Moderator Controls *******************/
+
+#moderatorControls { 
+    position: absolute;
+    background-color: white;
+    border: 2px solid #ff0000;
+    padding: 10px 10px 10px 5px;
+    left: -50px;
+    top:  950px;
+}
+#moderatorControls ul{ 
+    list-style: none;
+    margin-left: 5px;
+    padding-left: 5px;
+}
+
+#moderatorControls li{ 
+    margin-bottom: 10px;
+    margin-left: 0px;
+    padding-left: 0px;
+}
+
+#moderatorControls a, #moderatorControls p, #moderatorControls b{ 
+    color: #ff0000;
+}
+
+

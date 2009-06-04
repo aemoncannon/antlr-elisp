@@ -53,6 +53,10 @@
      '(error a3el-re-error))
 (put 'a3el-mismatched-set 'error-message "Mismatched set")
 
+(put 'a3el-mismatched-range 'error-conditions
+     '(error a3el-re-error))
+(put 'a3el-mismatched-range 'error-message "Mismatched range")
+
 
 
 (defstruct a3el-common-token
@@ -179,34 +183,12 @@
 
 
 (defmacro a3el-defrule (name params &rest body)
-  (let ((tokens (if (boundp 'current-lexer)
-		    (a3el-lexer-tokens current-lexer)
-		  (a3el-parser-tokens current-parser)))
-	(bitsets (if (boundp 'current-parser)
-		     (a3el-parser-bitsets current-parser)))
-	(current-buffer (if (boundp 'current-lexer)
-			    '(a3el-lexer-context-input context)
-			  '(a3el-lexer-context-input (a3el-parser-context-input context))))
-	(let-bindings '()))
-    
-    ;; Create let-bindings for tokens
-    (maphash (lambda (key value)
-	       (setq let-bindings (cons (list key value) let-bindings))) tokens)
-
-    ;; Create let-bindings for bitsets
-    (if bitsets
-	(maphash (lambda (key value)
-		   (setq let-bindings (cons (list key value) let-bindings))) bitsets))
-
-    `(puthash ',name (lambda (context ,@params)
-		       (with-current-buffer ,current-buffer
-			 (let (,@let-bindings)
-			   ,@body)))
-	      (if (boundp 'current-lexer) 
-		  (a3el-lexer-rules current-lexer)
-		(a3el-parser-rules current-parser)))))
-
-
+  `(puthash ',name (lambda (context ,@params)
+		     (with-current-buffer current-buffer
+		       ,@body))
+	    (if (boundp 'current-lexer) 
+		(a3el-lexer-rules current-lexer)
+	      (a3el-parser-rules current-parser))))
 
 
 
@@ -225,7 +207,9 @@
   name
   (tokens (make-hash-table))
   (rules (make-hash-table))
-  (dfas (make-hash-table)))
+  (dfas (make-hash-table))
+  (entry-func nil)
+  )
 
 
 (defstruct a3el-lexer-context
@@ -384,11 +368,11 @@
 
 
 (defmacro a3el-lexer-match-range (a b)
-  (let ((la (a3el-lexer-input-LA 1)))
-    (when (or (< la a) (> la b))
-      (signal 'mismatched-range (list a b)))
-    (a3el-lexer-input-consume)
-    (setf (a3el-lexer-context-failed context) nil)))
+  `(let ((la (a3el-lexer-input-LA 1)))
+     (when (or (< la ,a) (> la ,b))
+       (signal 'a3el-mismatched-range (list ,a ,b)))
+     (a3el-lexer-input-consume)
+     (setf (a3el-lexer-context-failed context) nil)))
 
 (defmacro a3el-lexer-match (s)
   (cond
@@ -481,7 +465,7 @@
 	    (throw 'at-end nil))
 	  (condition-case re
 	      (progn
-		(funcall (gethash 'Tokens (a3el-lexer-rules (a3el-lexer-context-lexer context))) context)
+		(funcall (a3el-lexer-entry-func (a3el-lexer-context-lexer context)) context 'Tokens)
 		(when (null (a3el-lexer-context-token context))
 		  (a3el-lex-emit-token))
 		(unless (eq (a3el-lexer-context-token context) *a3el-token-skip-token*)
@@ -609,8 +593,6 @@
 
 
 
-
-
 (defstruct a3el-parser
   "An Antlr parser"
   name
@@ -618,6 +600,7 @@
   (tokens (make-hash-table))
   (rules (make-hash-table))
   (bitsets (make-hash-table))
+  (entry-func nil)
   )
 
 
@@ -643,7 +626,7 @@
      (let ((current-parser (gethash ',name *a3el-runtime-parsers*)))
        ,@body)))
 
-(defun a3el-parser-token-names (&rest names)
+(defun a3el-parser-init-token-names (&rest names)
   (setf (a3el-parser-token-names current-parser) names))
 
 (defmacro a3el-parser-initialization (&rest body))
@@ -699,7 +682,7 @@
 
 (defun a3el-parser-input-LB (k)
   "Look backwards k tokens on-channel tokens"
-  (throw "Not implemented!"))
+  (throw 'error "Not implemented!"))
 
 
 (defun a3el-parser-match (ttype follow)
@@ -852,12 +835,19 @@
     i))
 
 
-(defun a3el-parse-string (lname pname start-rule str) 
-  (let* ((buffer  (a3el-buffer-from-string str))
-	 (context (make-a3el-parser-context 
+(defun a3el-parse-buffer (lname pname start-rule buffer)
+  "Invoke the given lexer,parser and start-rule on the given buffer."
+  (let* ((context (make-a3el-parser-context 
 		   :input (a3el-lexer-for-buffer lname buffer 0 (buffer-size buffer))
 		   :parser (gethash pname *a3el-runtime-parsers*))))
-    (funcall (gethash start-rule (a3el-parser-rules (a3el-parser-context-parser context))) context)))
+    (funcall (a3el-parser-entry-func (a3el-parser-context-parser context)) context start-rule)))
+
+
+(defun a3el-parse-string (lname pname start-rule str) 
+  "Create a temporary buffer containing only str and invoke the given lexer,parser and start-rule."
+  (let* ((buffer  (a3el-buffer-from-string str)))
+    (a3el-parse-buffer lname pname start-rule buffer)))
+
 
 (defmacro a3el-parser-push-follow (rule-name)
   `(progn 
