@@ -1,7 +1,7 @@
 (load "test_lexer_elispLexer.el")
 
 (defun print-token (token)
-  (message "Token: [%d] {%d -> %d} %s" (lexer-token-type token) (common-token-start token) (common-token-stop token) (lexer-token-text token)))
+  (message "Token: [%d] {%d -> %d} %s" (a3el-lexer-token-type token) (a3el-common-token-start token) (a3el-common-token-stop token) (a3el-lexer-token-text token)))
 
 (test "Simple lexing"
       (assert-equal "Basic match"

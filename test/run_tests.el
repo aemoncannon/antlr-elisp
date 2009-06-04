@@ -33,19 +33,19 @@
 (setq load-path (cons (expand-file-name "src/runtime/ELisp") load-path))
 (setq load-path (cons (expand-file-name "test") load-path))
 
-(require 'antlr-runtime)
+(require 'a3el-runtime)
 
 (require 'el_test)
 
 (defun collect-lex-tokens (name str)
   (let ((all-tokens ()))
-    (lex-string name str #'(lambda (token) 
-                             (when (= (common-token-channel token) 0)
-                               (setq all-tokens (cons (cons (lexer-token-type token) (lexer-token-text token)) all-tokens)))))
+    (a3el-lex-string name str #'(lambda (token) 
+                             (when (= (a3el-common-token-channel token) 0)
+                               (setq all-tokens (cons (cons (a3el-lexer-token-type token) (a3el-lexer-token-text token)) all-tokens)))))
     (reverse all-tokens)))
 
 (defun do-parse (lexerName parserName start-rule str)
-  (parse-string lexerName parserName start-rule str))
+  (a3el-parse-string lexerName parserName start-rule str))
 
 (load "simple_lexer_test.el")
 (load "calc_lexer_test.el")

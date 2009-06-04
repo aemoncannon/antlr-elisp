@@ -7,7 +7,7 @@
                     nil (do-parse 'full_calc_elispLexer 'full_calc_elispParser 'evaluate "(1)"))
 
 
-      (let ((errors (swallowing-recognition-errors 
+      (let ((errors (a3el-swallowing-recognition-errors 
 		     (do-parse 
 		      'full_calc_elispLexer 
 		      'full_calc_elispParser 
@@ -18,7 +18,7 @@
 			      "then resync on the next ')'.")
 		      t
 		      (and (= 1 (length errors))
-			   (equal 'no-viable-alt (car (first errors))))))
+			   (equal 'a3el-no-viable-alt (car (first errors))))))
       )
 
 

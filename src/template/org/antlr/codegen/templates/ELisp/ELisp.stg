@@ -46,7 +46,7 @@ outputFile(LEXER,PARSER,TREE_PARSER, actionScope, actions,
 <actions.(actionScope).header>
 
 <@imports>
-(require 'antlr-runtime)
+(require 'a3el-runtime)
 
 <@end>
 
@@ -56,10 +56,10 @@ outputFile(LEXER,PARSER,TREE_PARSER, actionScope, actions,
 
 lexer(grammar, name, tokens, scopes, rules, numRules, labelType="Token",
       filterMode) ::= <<
-(deflexer <name>)
+(a3el-deflexer <name>)
 
 (with-lexer <name>
-  <tokens:{(deftoken <it.name> <it.type>)}; separator="\n">
+  <tokens:{(a3el-deftoken <it.name> <it.type>)}; separator="\n">
   <scopes:{<if(it.isDynamicGlobalScope)><globalAttributeScope(scope=it)><endif>}>
   <actions.lexer.members>
 
@@ -71,7 +71,7 @@ lexer(grammar, name, tokens, scopes, rules, numRules, labelType="Token",
   <synpreds:{p | <lexerSynpred(p)>}>
 
   <cyclicDFAs:cyclicDFA()> <! dump tables for all DFA !>
-  <cyclicDFAs:{dfa | (setDFA dfa<dfa.decisionNumber> (make-DFAstruct-DFA<dfa.decisionNumber>))}; separator="\n">
+  <cyclicDFAs:{dfa | (a3el-setDFA dfa<dfa.decisionNumber> (make-a3el-DFAstruct-DFA<dfa.decisionNumber>))}; separator="\n">
 )
 >>
 
@@ -89,12 +89,12 @@ filteringActionGate() ::= ";; FIXME(filteringActionGate)"
 genericParser(grammar, name, scopes, tokens, tokenNames, rules, numRules,
               bitsets, inputStreamType, superClass,
               ASTLabelType="Object", labelType, members) ::= <<
-(defparser <name>)
+(a3el-defparser <name>)
 
 (with-parser <name>
-    (parser-token-names "\<invalid>" "\<EOR>" "\<DOWN>" "\<UP>" <tokenNames; separator=" ">)
+    (a3el-parser-token-names "\<invalid>" "\<EOR>" "\<DOWN>" "\<UP>" <tokenNames; separator=" ">)
 
-    <tokens:{(deftoken <it.name> <it.type>)}; separator="\n">
+    <tokens:{(a3el-deftoken <it.name> <it.type>)}; separator="\n">
 
     <scopes:{<if(it.isDynamicGlobalScope)><globalAttributeScope(scope=it)><endif>}>
 
@@ -102,9 +102,9 @@ genericParser(grammar, name, scopes, tokens, tokenNames, rules, numRules,
                     words64=it.bits)>
 
     <@members>
-    (parser-initialization
+    (a3el-parser-initialization
 <if(backtracking)>
-      (setf (antlr-parser-rule-memo current-parser) (make-vector (+ <numRules> 1) nil))
+      (setf (a3el-parser-rule-memo current-parser) (make-vector (+ <numRules> 1) nil))
 <endif>
       )
     <@end>
@@ -142,7 +142,7 @@ treeParser(grammar, name, scopes, tokens, tokenNames, globalAction, rules, numRu
 synpredRule(ruleName, ruleDescriptor, block, description, nakedBlock) ::=
 <<
 ;; $ANTLR start <ruleName>
-(defrule <ruleName>_fragment (<ruleDescriptor.parameterScope:parameterScope(scope=it)>)
+(a3el-defrule <ruleName>_fragment (<ruleDescriptor.parameterScope:parameterScope(scope=it)>)
   <if(trace)>(trace-in "<ruleName>_fragment" <ruleDescriptor.index>)<endif>
   (catch 'return
   (unwind-protect
@@ -169,12 +169,12 @@ ruleMemoization(name) ::= <<
 checkRuleBacktrackFailure() ::= <<
 <if(backtracking)>
 	<if(LEXER)>
-	(if (antlr-lexer-context-failed context) 
+	(if (a3el-lexer-context-failed context) 
 	(throw 'rule-return (or <ruleReturnValue()>)))
 
 	<else>
 
-	(if (antlr-parser-context-failed context)
+	(if (a3el-parser-context-failed context)
 	(throw 'rule-return (or <ruleReturnValue()>)))
 	<endif>
 <endif>
@@ -184,16 +184,16 @@ checkRuleBacktrackFailure() ::= <<
 ruleBacktrackFailure() ::= <<
 <if(backtracking)>
 	<if(LEXER)>
-	(if (> (antlr-lexer-context-backtracking context) 0)
+	(if (> (a3el-lexer-context-backtracking context) 0)
 	(progn
-	(setf (antlr-lexer-context-failed context) t)
+	(setf (a3el-lexer-context-failed context) t)
 	(throw 'rule-return (or <ruleReturnValue()>))))
 
 	<else>
 
-	(if (> (antlr-parser-context-backtracking context) 0)
+	(if (> (a3el-parser-context-backtracking context) 0)
 	(progn
-	(setf (antlr-parser-context-failed context) t)
+	(setf (a3el-parser-context-failed context) t)
 	(throw 'rule-return (or <ruleReturnValue()>))))
 	<endif>
 <endif>
@@ -215,7 +215,7 @@ rule(ruleName,ruleDescriptor,block,emptyRule,description,exceptions,finally,memo
 
 ;; $ANTLR start <ruleName>
 ;; <fileName>:<description>
-(defrule <ruleName> (<ruleDescriptor.parameterScope:parameterScope(scope=it)>)
+(a3el-defrule <ruleName> (<ruleDescriptor.parameterScope:parameterScope(scope=it)>)
   <if(trace)>(trace-in "<ruleName>" <ruleDescriptor.index>)<endif>
   <ruleScopeSetUp()>
   <ruleDeclarations()>
@@ -240,13 +240,13 @@ rule(ruleName,ruleDescriptor,block,emptyRule,description,exceptions,finally,memo
 <if(actions.(actionScope).rulecatch)>
     <actions.(actionScope).rulecatch>
 <else>
-    (antlr-error 
+    (a3el-re-error 
     <if(LEXER)>
-      (lexer-report-error re)<\n>
-      (lexer-recover re)<\n>
+      (a3el-lexer-report-error re)<\n>
+      (a3el-lexer-recover re)<\n>
     <else>
-      (parser-report-error re)<\n>
-      (parser-recover re)<\n>
+      (a3el-parser-report-error re)<\n>
+      (a3el-parser-recover re)<\n>
     <endif>
     ))
 <endif>
@@ -328,7 +328,7 @@ retval.stop = input.LT(-1);<\n>
 memoize() ::= <<
 <if(memoize)>
 <if(backtracking)>
-(if (> (antlr-parser-context-backtracking context) 0)
+(if (> (a3el-parser-context-backtracking context) 0)
   (memoize input <ruleDescriptor.index> <ruleDescriptor.name>_StartIndex))
 <endif>
 <endif>
@@ -338,7 +338,7 @@ memoize() ::= <<
  *  fragment rules.
  */
 lexerRule(ruleName,nakedBlock,ruleDescriptor,block,memoize) ::= <<
-(defrule <ruleName> (<ruleDescriptor.parameterScope:parameterScope(scope=it)>)
+(a3el-defrule <ruleName> (<ruleDescriptor.parameterScope:parameterScope(scope=it)>)
   <if(trace)>(trace-in "<ruleName>" <ruleDescriptor.index>)<endif>
   <ruleScopeSetUp()>
   <ruleDeclarations()>
@@ -351,13 +351,13 @@ lexerRule(ruleName,nakedBlock,ruleDescriptor,block,memoize) ::= <<
   <ruleDescriptor.actions.init>
   <block><\n>
 <else>
-  (let ((_type (lexer-token-id <ruleName>)))
+  (let ((_type (a3el-lexer-token-id <ruleName>)))
     <ruleMemoization(name=ruleName)>
     <lexerRuleLabelDefs()>
     <ruleDescriptor.actions.init>
     <block>
     <ruleCleanUp()>
-    (lexer-set-type _type)
+    (a3el-lexer-set-type _type)
     <(ruleDescriptor.actions.after):execAction()>
   )
 <endif>
@@ -375,7 +375,7 @@ lexerRule(ruleName,nakedBlock,ruleDescriptor,block,memoize) ::= <<
  *  that chooses between lexer rules.
  */
 tokensRule(ruleName,nakedBlock,args,block,ruleDescriptor) ::= <<
-(defrule Tokens ()
+(a3el-defrule Tokens ()
   <block><\n>
 )
 >>
@@ -391,7 +391,7 @@ block(alts,decls,decision,enclosingBlockLevel,blockLevel,decisionNumber,maxK,max
   <decision>
   <@postdecision()>
   <@prebranch()>
-  (antlr-alt-case alt<decisionNumber>
+  (a3el-alt-case alt<decisionNumber>
     <alts:altSwitchCase()>)
   <@postbranch()>)
 >>
@@ -404,7 +404,7 @@ ruleBlock(alts,decls,decision,enclosingBlockLevel,blockLevel,decisionNumber,maxK
   <@predecision()>
   <decision>
   <@postdecision()>
-  (antlr-alt-case alt<decisionNumber>
+  (a3el-alt-case alt<decisionNumber>
     <alts:altSwitchCase()>))
 >>
 
@@ -437,13 +437,13 @@ positiveClosureBlock(alts,decls,decision,enclosingBlockLevel,blockLevel,decision
         <@predecision()>
         <decision>
         <@postdecision()>
-        (antlr-alt-case alt<decisionNumber>
+        (a3el-alt-case alt<decisionNumber>
           <alts:altSwitchCase()>
           (otherwise
             (if (>= cnt<decisionNumber> 1)
               (throw 'loop<decisionNumber> nil))
             <ruleBacktrackFailure()>
-            (signal 'early-exit (list <decisionNumber>))))
+            (signal 'a3el-early-exit (list <decisionNumber>))))
         (incf cnt<decisionNumber>))
     ))
 <@postloop()>)
@@ -462,7 +462,7 @@ closureBlock(alts,decls,decision,enclosingBlockLevel,blockLevel,decisionNumber,m
       <@predecision()>
       <decision>
       <@postdecision()>
-      (antlr-alt-case alt<decisionNumber>
+      (a3el-alt-case alt<decisionNumber>
         <alts:altSwitchCase()>
         (otherwise
           (throw 'loop<decisionNumber> nil)))))
@@ -508,9 +508,9 @@ element() ::= <<
 /** match a token optionally with a label in front */
 tokenRef(token,label,elementIndex) ::= <<
 <if(label)>
-(setq <label> (parser-input-LT 1))<\n>
+(setq <label> (a3el-parser-input-LT 1))<\n>
 <endif>
-(parser-match <token> FOLLOW_<token>_in_<ruleName><elementIndex>)
+(a3el-parser-match <token> FOLLOW_<token>_in_<ruleName><elementIndex>)
 <checkRuleBacktrackFailure()>
 >>
 
@@ -529,48 +529,49 @@ charRef(char,label) ::= <<
 <if(label)>
 (setq <label> (lookahead input 1))<\n>
 <endif>
-(lexer-match <char>) <checkRuleBacktrackFailure()>
+(a3el-lexer-match <char>) <checkRuleBacktrackFailure()>
 >>
+
 
 /** match a character range */
 charRangeRef(a,b,label) ::= <<
 <if(label)>
 <if(LEXER)>
-(setq <label> (lexer-input-LA 1))<\n>
+(setq <label> (a3el-lexer-input-LA 1))<\n>
 <else>
-(setq <label> (parser-input-LA 1))<\n>
+(setq <label> (a3el-parser-input-LA 1))<\n>
 <endif>
 <endif>
-(lexer-match-range <a> <b>) <checkRuleBacktrackFailure()>
+(a3el-lexer-match-range <a> <b>) <checkRuleBacktrackFailure()>
 >>
 
 /** For now, sets are interval tests and must be tested inline */
 matchSet(s,label,elementIndex,postmatchCode="") ::= <<
 <if(label)>
 <if(LEXER)>
-(setq <label> (lexer-input-LA 1))<\n>
+(setq <label> (a3el-lexer-input-LA 1))<\n>
 <else>
-(setq <label> (parser-input-LT 1))<\n>
+(setq <label> (a3el-parser-input-LT 1))<\n>
 <endif>
 <endif>
 (if <s>
   (progn
 
     <if(LEXER)>
-    (lexer-input-consume)
+    (a3el-lexer-input-consume)
     <else>
-    (parser-input-consume)
+    (a3el-parser-input-consume)
     <endif>
 
     <postmatchCode>
 
     <if(!LEXER)>
-    (setf (antlr-parser-context-error-recovery context) nil)
+    (setf (a3el-parser-context-error-recovery context) nil)
     <endif>
 
     <if(!LEXER)>
     <if(backtracking)>
-    (setf (antlr-parser-context-failed context) nil)
+    (setf (a3el-parser-context-failed context) nil)
     <endif>    
     <endif>
     )
@@ -580,9 +581,9 @@ matchSet(s,label,elementIndex,postmatchCode="") ::= <<
     <@mismatchedSetException()>
 
     <if(LEXER)>
-    (lexer-recover '(mismatched-set nil))
+    (a3el-lexer-recover '(mismatched-set nil))
     <else>
-    (parser-recover-from-mismatched-token-no-type 'mismatched-set FOLLOW_set_in_<ruleName><elementIndex>);
+    (a3el-parser-recover-from-mismatched-token-no-type 'mismatched-set FOLLOW_set_in_<ruleName><elementIndex>);
     <endif>
 
     (signal 'mismatched-set nil))<\n>
@@ -601,23 +602,23 @@ int <label>Start = getCharIndex();
 match(<string>); <checkRuleBacktrackFailure()>
 <labelType> <label> = new CommonToken(input, Token.INVALID_TOKEN_TYPE, Token.DEFAULT_CHANNEL, <label>Start, getCharIndex()-1);
 <else>
-(lexer-match <string>) <checkRuleBacktrackFailure()><\n>
+(a3el-lexer-match <string>) <checkRuleBacktrackFailure()><\n>
 <endif>
 >>
 
 wildcard(label,elementIndex) ::= <<
 <if(label)>
   <if(LEXER)> 
-    (setq <label> (lexer-input-LT 1))<\n>
+    (setq <label> (a3el-lexer-input-LT 1))<\n>
   <else>
-    (setq <label> (parser-input-LT 1))<\n>
+    (setq <label> (a3el-parser-input-LT 1))<\n>
   <endif>      
 <endif>
 
 <if(LEXER)> 
-  (lexer-match-any)
+  (a3el-lexer-match-any)
 <else>
-  (parser-match-any)
+  (a3el-parser-match-any)
 <endif>     
 <checkRuleBacktrackFailure()>
 
@@ -631,9 +632,9 @@ wildcardAndListLabel(label,elementIndex) ::= <<
 /** Match . wildcard in lexer */
 wildcardChar(label, elementIndex) ::= <<
 <if(label)>
-  (setq <label> (lexer-input-LA 1))<\n>
+  (setq <label> (a3el-lexer-input-LA 1))<\n>
 <endif>
-(lexer-match-any)
+(a3el-lexer-match-any)
 <checkRuleBacktrackFailure()>
 >>
 
@@ -646,13 +647,13 @@ wildcardCharListLabel(label, elementIndex) ::= <<
  *  and a return value or values.
  */
 ruleRef(rule,label,elementIndex,args) ::= <<
-(parser-push-follow FOLLOW_<rule>_in_<ruleName><elementIndex>)
+(a3el-parser-push-follow FOLLOW_<rule>_in_<ruleName><elementIndex>)
 <if(label)>
-(setq <label> (parser-call-rule <rule> <args; separator=" ">))<\n>
+(setq <label> (a3el-parser-call-rule <rule> <args; separator=" ">))<\n>
 <else>
-(parser-call-rule <rule> <args; separator=" ">)<\n>
+(a3el-parser-call-rule <rule> <args; separator=" ">)<\n>
 <endif>
-(decf (antlr-parser-context-fsp context))
+(decf (a3el-parser-context-fsp context))
 <checkRuleBacktrackFailure()><\n>
 >>
 
@@ -666,10 +667,10 @@ ruleRefAndListLabel(rule,label,elementIndex,args) ::= <<
 lexerRuleRef(rule,label,args,elementIndex) ::= <<
 <if(label)>
 int <label>Start<elementIndex> = getCharIndex();
-(lexer-call-rule <rule> <args; separator=" ">) <checkRuleBacktrackFailure()>
+(a3el-lexer-call-rule <rule> <args; separator=" ">) <checkRuleBacktrackFailure()>
 <label> = new CommonToken(input, Token.INVALID_TOKEN_TYPE, Token.DEFAULT_CHANNEL, <label>Start<elementIndex>, getCharIndex()-1);
 <else>
-(lexer-call-rule <rule> <args; separator=" ">) <checkRuleBacktrackFailure()>
+(a3el-lexer-call-rule <rule> <args; separator=" ">) <checkRuleBacktrackFailure()>
 <endif>
 >>
 
@@ -683,10 +684,10 @@ lexerRuleRefAndListLabel(rule,label,args,elementIndex) ::= <<
 lexerMatchEOF(label,elementIndex) ::= <<
 <if(label)>
 int <label>Start<elementIndex> = getCharIndex();
-(lexer-match EOF) <checkRuleBacktrackFailure()>
+(a3el-lexer-match EOF) <checkRuleBacktrackFailure()>
 <labelType> <label> = new CommonToken(input, EOF, Token.DEFAULT_CHANNEL, <label>Start<elementIndex>, getCharIndex()-1);
 <else>
-(lexer-match EOF) <checkRuleBacktrackFailure()>
+(a3el-lexer-match EOF) <checkRuleBacktrackFailure()>
 <endif>
 >>
 
@@ -695,7 +696,7 @@ tree(root, actionsAfterRoot, children, nullableChildList) ::= <<
 <root:element()>
 <actionsAfterRoot:element()>
 <if(nullableChildList)>
-(when (equal (parser-input-LA 1) *antlr-token-down*)
+(when (equal (a3el-parser-input-LA 1) *a3el-token-down*)
     match(input, Token.DOWN, null); <checkRuleBacktrackFailure()>
     <children:element()>
     match(input, Token.UP, null); <checkRuleBacktrackFailure()>)
@@ -718,14 +719,14 @@ validateSemanticPredicate(pred,description) ::= <<
 // F i x e d  D F A  (if-then-else)
 
 dfaState(k,edges,eotPredictsAlt,description,stateNumber,semPredState) ::= <<
-(let ((LA<decisionNumber>_<stateNumber> (<if(LEXER)>lexer-input-LA<else>parser-input-LA<endif> <k>)))<\n>
+(let ((LA<decisionNumber>_<stateNumber> (<if(LEXER)>a3el-lexer-input-LA<else>a3el-parser-input-LA<endif> <k>)))<\n>
 <edges; separator="\n   ">
 (progn
 <if(eotPredictsAlt)>
     (setq alt<decisionNumber> <eotPredictsAlt>)
 <else>
     <ruleBacktrackFailure()>
-    (signal 'no-viable-alt (list "<description>" <decisionNumber> <stateNumber>))
+    (signal 'a3el-no-viable-alt (list "<description>" <decisionNumber> <stateNumber>))
 <endif>
 )<edges:{)}; separator="">)<\n>
 >>
@@ -737,9 +738,9 @@ dfaState(k,edges,eotPredictsAlt,description,stateNumber,semPredState) ::= <<
  */
 dfaOptionalBlockState(k,edges,eotPredictsAlt,description,stateNumber,semPredState) ::= <<
 <if(LEXER)>
-(setq LA<decisionNumber>_<stateNumber> (lexer-input-LA <k>))<\n>
+(setq LA<decisionNumber>_<stateNumber> (a3el-lexer-input-LA <k>))<\n>
 <else>
-(setq LA<decisionNumber>_<stateNumber> (parser-input-LA <k>))<\n>
+(setq LA<decisionNumber>_<stateNumber> (a3el-parser-input-LA <k>))<\n>
 <endif>
 <edges; separator="\n  "><edges:{)}; separator="">
 >>
@@ -752,9 +753,9 @@ dfaOptionalBlockState(k,edges,eotPredictsAlt,description,stateNumber,semPredStat
  */
 dfaLoopbackState(k,edges,eotPredictsAlt,description,stateNumber,semPredState) ::= <<
 <if(LEXER)>
-(setq LA<decisionNumber>_<stateNumber> (lexer-input-LA <k>))<\n>
+(setq LA<decisionNumber>_<stateNumber> (a3el-lexer-input-LA <k>))<\n>
 <else>
-(setq LA<decisionNumber>_<stateNumber> (parser-input-LA <k>))<\n>
+(setq LA<decisionNumber>_<stateNumber> (a3el-parser-input-LA <k>))<\n>
 <endif>
 <edges; separator="\n  ">
 <if(eotPredictsAlt)>
@@ -789,9 +790,9 @@ dfaEdge(labelExpr, targetState, predicates) ::= <<
  */
 dfaStateSwitch(k,edges,eotPredictsAlt,description,stateNumber,semPredState) ::= <<
 <if(LEXER)>
-(antlr-alt-case (lexer-input-LA <k>)
+(a3el-alt-case (a3el-lexer-input-LA <k>)
 <else>
-(antlr-alt-case (parser-input-LA <k>)
+(a3el-alt-case (a3el-parser-input-LA <k>)
 <endif>
 <edges; separator="\n">
 (otherwise
@@ -799,16 +800,16 @@ dfaStateSwitch(k,edges,eotPredictsAlt,description,stateNumber,semPredState) ::= 
     (setq alt<decisionNumber> <eotPredictsAlt>)
 <else>
     <ruleBacktrackFailure()>
-    (signal 'no-viable-alt (list "<description>" <decisionNumber> <stateNumber>))
+    (signal 'a3el-no-viable-alt (list "<description>" <decisionNumber> <stateNumber>))
 <endif>)
 )<\n>
 >>
 
 dfaOptionalBlockStateSwitch(k,edges,eotPredictsAlt,description,stateNumber,semPredState) ::= <<
 <if(LEXER)>
-(antlr-alt-case (lexer-input-LA <k>)
+(a3el-alt-case (a3el-lexer-input-LA <k>)
 <else>
-(antlr-alt-case (parser-input-LA <k>)
+(a3el-alt-case (a3el-parser-input-LA <k>)
 <endif>
     <edges; separator="\n">
 )<\n>
@@ -816,9 +817,9 @@ dfaOptionalBlockStateSwitch(k,edges,eotPredictsAlt,description,stateNumber,semPr
 
 dfaLoopbackStateSwitch(k, edges,eotPredictsAlt,description,stateNumber,semPredState) ::= <<
 <if(LEXER)>
-(antlr-alt-case (lexer-input-LA <k>)
+(a3el-alt-case (a3el-lexer-input-LA <k>)
 <else>
-(antlr-alt-case (parser-input-LA <k>)
+(a3el-alt-case (a3el-parser-input-LA <k>)
 <endif>
 <edges; separator="\n"><\n>
 <if(eotPredictsAlt)>
@@ -838,7 +839,7 @@ dfaEdgeSwitch(labels, targetState) ::= <<
  *  The <name> attribute is inherited via the parser, lexer, ...
  */
 dfaDecision(decisionNumber,description) ::= <<
-(setq alt<decisionNumber> (predictDFA dfa<decisionNumber>))
+(setq alt<decisionNumber> (a3el-predictDFA dfa<decisionNumber>))
 >>
 
 /* Dump DFA tables as run-length-encoded Strings of octal values.
@@ -852,48 +853,48 @@ dfaDecision(decisionNumber,description) ::= <<
 
 cyclicDFA(dfa) ::= <<
 
-(defDFA DFA<dfa.decisionNumber>_eot [<dfa.eot; wrap="\n", separator=" ", null="-1">])
-(defDFA DFA<dfa.decisionNumber>_eof [<dfa.eof; wrap="\n", separator=" ", null="-1">])
-(defDFA DFA<dfa.decisionNumber>_min [<dfa.min; wrap="\n", separator=" ", null="-1">])
-(defDFA DFA<dfa.decisionNumber>_max [<dfa.max; wrap="\n", separator=" ", null="-1">])
-(defDFA DFA<dfa.decisionNumber>_accept [<dfa.accept; wrap="\n", separator=" ", null="-1">])
-(defDFA DFA<dfa.decisionNumber>_special [<dfa.special; wrap="\n", separator=" ", null="-1">])
-(defDFA DFA<dfa.decisionNumber>_transition [
+(a3el-defDFA DFA<dfa.decisionNumber>_eot [<dfa.eot; wrap="\n", separator=" ", null="-1">])
+(a3el-defDFA DFA<dfa.decisionNumber>_eof [<dfa.eof; wrap="\n", separator=" ", null="-1">])
+(a3el-defDFA DFA<dfa.decisionNumber>_min [<dfa.min; wrap="\n", separator=" ", null="-1">])
+(a3el-defDFA DFA<dfa.decisionNumber>_max [<dfa.max; wrap="\n", separator=" ", null="-1">])
+(a3el-defDFA DFA<dfa.decisionNumber>_accept [<dfa.accept; wrap="\n", separator=" ", null="-1">])
+(a3el-defDFA DFA<dfa.decisionNumber>_special [<dfa.special; wrap="\n", separator=" ", null="-1">])
+(a3el-defDFA DFA<dfa.decisionNumber>_transition [
         <dfa.transition:{s | [<s; wrap="\n     ", separator=" ", null="-1">]}; separator=" \n", null="">
     ])
 
-(defDFAstruct DFA<dfa.decisionNumber>
+(a3el-defDFAstruct DFA<dfa.decisionNumber>
   :decision-number <dfa.decisionNumber>
-  :eot (getDFA DFA<dfa.decisionNumber>_eot)
-  :eof (getDFA DFA<dfa.decisionNumber>_eof)
-  :min (getDFA DFA<dfa.decisionNumber>_min)
-  :max (getDFA DFA<dfa.decisionNumber>_max)
-  :accept (getDFA DFA<dfa.decisionNumber>_accept)
-  :special (getDFA DFA<dfa.decisionNumber>_special)
-  :transition (getDFA DFA<dfa.decisionNumber>_transition)
+  :eot (a3el-getDFA DFA<dfa.decisionNumber>_eot)
+  :eof (a3el-getDFA DFA<dfa.decisionNumber>_eof)
+  :min (a3el-getDFA DFA<dfa.decisionNumber>_min)
+  :max (a3el-getDFA DFA<dfa.decisionNumber>_max)
+  :accept (a3el-getDFA DFA<dfa.decisionNumber>_accept)
+  :special (a3el-getDFA DFA<dfa.decisionNumber>_special)
+  :transition (a3el-getDFA DFA<dfa.decisionNumber>_transition)
   :description "<dfa.description>"
   <@errorMethod()>
 <if(dfa.specialStateSTs)>
   :special-state-transition #'(lambda (s) 
      (let ((s-original s))
-        (antlr-alt-case s
+        (a3el-alt-case s
         <dfa.specialStateSTs:{state |
         (<i0> <! compressed special state numbers 0..n-1 !>
             <state>) }; separator="\n">
         )
 <if(backtracking)>
 	<if(LEXER)>
-        (when (> (antlr-lexer-context-backtracking context) 0)
-          (setf (antlr-lexer-context-failed context) t)
+        (when (> (a3el-lexer-context-backtracking context) 0)
+          (setf (a3el-lexer-context-failed context) t)
           (throw 'return -1))<\n>
 	<else>
-        (when (> (antlr-parser-context-backtracking context) 0)
-          (setf (antlr-parser-context-failed context) t)
+        (when (> (a3el-parser-context-backtracking context) 0)
+          (setf (a3el-parser-context-failed context) t)
           (throw 'return -1))<\n>
 	<endif>
 <endif>
 	)
-    (signal 'no-viable-alt (list "<dfa.description>" <dfa.decisionNumber> s-original))
+    (signal 'a3el-no-viable-alt (list "<dfa.description>" <dfa.decisionNumber> s-original))
     )
 <endif>
 )
@@ -904,21 +905,21 @@ cyclicDFA(dfa) ::= <<
  */
 cyclicDFAState(decisionNumber,stateNumber,edges,needErrorClause,semPredState) ::= <<
   <if(LEXER)>
-  (let ((LA<decisionNumber>_<stateNumber> (lexer-input-LA 1))
+  (let ((LA<decisionNumber>_<stateNumber> (a3el-lexer-input-LA 1))
          (index<decisionNumber>_<stateNumber> -1))<\n>
   <else>
-  (let ((LA<decisionNumber>_<stateNumber> (parser-input-LA 1))
+  (let ((LA<decisionNumber>_<stateNumber> (a3el-parser-input-LA 1))
          (index<decisionNumber>_<stateNumber> -1))<\n>
   <endif>
 
   
   <if(semPredState)> <! get next lookahead symbol to test edges, then rewind !>
     <if(LEXER)>
-    (setq index<decisionNumber>_<stateNumber>  (antlr-lexer-context-pos context))
-    (lexer-input-rewind)<\n>
+    (setq index<decisionNumber>_<stateNumber>  (a3el-lexer-context-pos context))
+    (a3el-lexer-input-rewind)<\n>
     <else>
-    (setq index<decisionNumber>_<stateNumber>  (antlr-parser-context-pos context))
-    (parser-input-rewind)<\n>
+    (setq index<decisionNumber>_<stateNumber>  (a3el-parser-context-pos context))
+    (a3el-parser-input-rewind)<\n>
     <endif>
   <endif>
   
@@ -929,9 +930,9 @@ cyclicDFAState(decisionNumber,stateNumber,edges,needErrorClause,semPredState) ::
   
   <if(semPredState)> <! return input cursor to state before we rewound !>
     <if(LEXER)>
-    (lexer-input-seek index<decisionNumber>_<stateNumber>)
+    (a3el-lexer-input-seek index<decisionNumber>_<stateNumber>)
     <else>
-    (parser-input-seek index<decisionNumber>_<stateNumber>)
+    (a3el-parser-input-seek index<decisionNumber>_<stateNumber>)
     <endif>
   <endif>
   
@@ -967,9 +968,9 @@ evalPredicate(pred,description) ::= "<pred>"
 
 evalSynPredicate(pred,description) ::= <<
   <if(!PARSER)>
-  (lexer-call-synpred <pred>_fragment)
+  (a3el-lexer-call-synpred <pred>_fragment)
   <else>
-  (parser-call-synpred <pred>_fragment)
+  (a3el-parser-call-synpred <pred>_fragment)
   <endif>
 >>
 
@@ -980,9 +981,9 @@ lookaheadTest(atom,k,atomAsInt) ::= "(equal LA<decisionNumber>_<stateNumber> <at
  */
 isolatedLookaheadTest(atom,k,atomAsInt) ::= <<
    <if(LEXER)>
-   (equal (lexer-input-LA <k>) <atom>)
+   (equal (a3el-lexer-input-LA <k>) <atom>)
    <else>
-   (equal (parser-input-LA <k>) <atom>)
+   (equal (a3el-parser-input-LA <k>) <atom>)
    <endif>
 >>
 
@@ -992,9 +993,9 @@ lookaheadRangeTest(lower,upper,k,rangeNumber,lowerAsInt,upperAsInt) ::= <<
 
 isolatedLookaheadRangeTest(lower,upper,k,rangeNumber,lowerAsInt,upperAsInt) ::= <<
    <if(LEXER)>
-  (and (\>= (lexer-input-LA <k>) <lower>) (\<= (lexer-input-LA <k>) <upper>))
+  (and (\>= (a3el-lexer-input-LA <k>) <lower>) (\<= (a3el-lexer-input-LA <k>) <upper>))
   <else>
-  (and (\>= (parser-input-LA <k>) <lower>) (\<= (parser-input-LA <k>) <upper>))
+  (and (\>= (a3el-parser-input-LA <k>) <lower>) (\<= (a3el-parser-input-LA <k>) <upper>))
   <endif>
 >>
 
@@ -1218,10 +1219,10 @@ execAction(action) ::= <<
 <else>
 
 <if(LEXER)>
-(when (= (antlr-lexer-context-backtracking context) 0)
+(when (= (a3el-lexer-context-backtracking context) 0)
   <action>)
 <else>
-(when (= (antlr-parser-context-backtracking context) 0)
+(when (= (a3el-parser-context-backtracking context) 0)
   <action>)
 <endif>
 
@@ -1234,7 +1235,7 @@ execAction(action) ::= <<
 // M I S C (properties, etc...)
 
 bitset(name, words64) ::= <<
-(parser-bitset <name> (vconcat (list <words64:{(read (concat "#X" (substring "<it>" 2)))};separator=" ">)))<\n>
+(a3el-parser-bitset <name> (vconcat (list <words64:{(read (concat "#X" (substring "<it>" 2)))};separator=" ">)))<\n>
 >>
 
 codeFileExtension() ::= ".el"

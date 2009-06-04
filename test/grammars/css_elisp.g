@@ -163,7 +163,7 @@ WS	:	(	' '
 			|	'\n'	// Unix (the right way)
 			)
 		)+
-		{ (lexer-set-channel 99) }
+		{ (a3el-lexer-set-channel 99) }
 	;
 
 // string literals
@@ -176,12 +176,12 @@ STRING
 SL_COMMENT
 	:	'//'
 		(~('\n'|'\r'))* ('\n'|'\r'('\n')?)
-		{ (lexer-set-channel 99) }
+		{ (a3el-lexer-set-channel 99) }
 	;
 	
 // multiple-line comments
 COMMENT
-	:	'/*' ( options {greedy=false;} : . )* '*/' { (lexer-set-channel 99)}
+	:	'/*' ( options {greedy=false;} : . )* '*/' { (a3el-lexer-set-channel 99)}
 	;
 
 IDENT

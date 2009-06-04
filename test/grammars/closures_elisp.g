@@ -15,4 +15,4 @@ COW: 'cow';
 GOOSE: 'goose';
 DUCK: 'duck';
 
-WS: (' ' | '\n' | '\t')+ { (lexer-set-channel 99) };
+WS: (' ' | '\n' | '\t')+ { (a3el-lexer-set-channel 99) };

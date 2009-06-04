@@ -10,4 +10,4 @@ DECIMAL: DIGIT+ '.' DIGIT+;
 
 fragment
 DIGIT: '0'..'9';
-WS: (' ' | '\n' | '\t')+ { (lexer-set-channel 99) };
+WS: (' ' | '\n' | '\t')+ { (a3el-lexer-set-channel 99) };
