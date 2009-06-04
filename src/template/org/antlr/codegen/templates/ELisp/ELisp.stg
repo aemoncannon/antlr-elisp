@@ -58,7 +58,6 @@ lexer(grammar, name, tokens, scopes, rules, numRules, labelType="Token",
       filterMode) ::= <<
  (a3el-deflexer <name>)
 
-
  (a3el-with-lexer <name>
 
    (setf (a3el-lexer-entry-func current-lexer) #'(lambda (context name)
@@ -413,6 +412,7 @@ tokensRule(ruleName,nakedBlock,args,block,ruleDescriptor) ::= <<
 block(alts,decls,decision,enclosingBlockLevel,blockLevel,decisionNumber,maxK,maxAlt,description) ::= <<
 ;; <fileName>:<description>
 (let ((alt<decisionNumber> <maxAlt>))
+ (a3el-lookahead-let-bindings "LA<decisionNumber>_" <maxK>
   <decls>
   <@predecision()>
   <decision>
@@ -420,19 +420,20 @@ block(alts,decls,decision,enclosingBlockLevel,blockLevel,decisionNumber,maxK,max
   <@prebranch()>
   (a3el-alt-case alt<decisionNumber>
     <alts:altSwitchCase()>)
-  <@postbranch()>)
+  <@postbranch()>))
 >>
 
 /** A rule block with multiple alternatives */
 ruleBlock(alts,decls,decision,enclosingBlockLevel,blockLevel,decisionNumber,maxK,maxAlt,description) ::= <<
 ;; <fileName>:<description>
 (let ((alt<decisionNumber> <maxAlt>))
+ (a3el-lookahead-let-bindings "LA<decisionNumber>_" <maxK>
   <decls>
   <@predecision()>
   <decision>
   <@postdecision()>
   (a3el-alt-case alt<decisionNumber>
-    <alts:altSwitchCase()>))
+    <alts:altSwitchCase()>)))
 >>
 
 ruleBlockSingleAlt(alts,decls,decision,enclosingBlockLevel,blockLevel,decisionNumber,description) ::= <<
@@ -461,6 +462,7 @@ positiveClosureBlock(alts,decls,decision,enclosingBlockLevel,blockLevel,decision
   (catch 'loop<decisionNumber>
     (while t
       (let ((alt<decisionNumber> <maxAlt>))
+      (a3el-lookahead-let-bindings "LA<decisionNumber>_" <maxK>
         <@predecision()>
         <decision>
         <@postdecision()>
@@ -470,7 +472,7 @@ positiveClosureBlock(alts,decls,decision,enclosingBlockLevel,blockLevel,decision
             (if (>= cnt<decisionNumber> 1)
               (throw 'loop<decisionNumber> nil))
             <ruleBacktrackFailure()>
-            (signal 'a3el-early-exit (list <decisionNumber>))))
+            (signal 'a3el-early-exit (list <decisionNumber>)))))
         (incf cnt<decisionNumber>))
     ))
 <@postloop()>)
@@ -486,13 +488,14 @@ closureBlock(alts,decls,decision,enclosingBlockLevel,blockLevel,decisionNumber,m
 (catch 'loop<decisionNumber>
   (while t
     (let ((alt<decisionNumber> <maxAlt>))
+      (a3el-lookahead-let-bindings "LA<decisionNumber>_" <maxK>
       <@predecision()>
       <decision>
       <@postdecision()>
       (a3el-alt-case alt<decisionNumber>
         <alts:altSwitchCase()>
         (otherwise
-          (throw 'loop<decisionNumber> nil)))))
+          (throw 'loop<decisionNumber> nil))))))
   <@postloop()>)
 >>
 
@@ -554,7 +557,7 @@ listLabel(label,elem) ::= <<
 /** match a character */
 charRef(char,label) ::= <<
 <if(label)>
-(setq <label> (lookahead input 1))<\n>
+(setq <label> (a3el-lexer-input-LA 1))<\n>
 <endif>
 (a3el-lexer-match <char>) <checkRuleBacktrackFailure()>
 >>

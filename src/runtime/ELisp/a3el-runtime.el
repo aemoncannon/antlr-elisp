@@ -1007,6 +1007,17 @@
 			     `((eql ,val-sym ,(car c)) ,@tail))))
 		       clauses)))))
 
+(defmacro a3el-lookahead-let-bindings (prefix max-k &rest body)
+  "A helper macro for generating the bindings for temporary lookahead
+   storage."
+  ;; (macroexpand '(a3el-lookahead-let-bindings "LA0_" 10 'hello))
+  (let ((bindings '()))
+    (dotimes (i max-k)
+      (let ((var-name (intern (concat prefix (number-to-string i)))))
+	(setq bindings (append bindings `((,var-name nil))))))
+    `(let (,@bindings)
+       ,@body)))
+
 
 (provide 'a3el-runtime)
 ;;; a3el-runtime.el ends here
