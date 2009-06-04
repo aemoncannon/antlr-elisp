@@ -58,7 +58,7 @@ lexer(grammar, name, tokens, scopes, rules, numRules, labelType="Token",
       filterMode) ::= <<
 (a3el-deflexer <name>)
 
-(with-lexer <name>
+(a3el-with-lexer <name>
   <tokens:{(a3el-deftoken <it.name> <it.type>)}; separator="\n">
   <scopes:{<if(it.isDynamicGlobalScope)><globalAttributeScope(scope=it)><endif>}>
   <actions.lexer.members>
@@ -91,7 +91,7 @@ genericParser(grammar, name, scopes, tokens, tokenNames, rules, numRules,
               ASTLabelType="Object", labelType, members) ::= <<
 (a3el-defparser <name>)
 
-(with-parser <name>
+(a3el-with-parser <name>
     (a3el-parser-token-names "\<invalid>" "\<EOR>" "\<DOWN>" "\<UP>" <tokenNames; separator=" ">)
 
     <tokens:{(a3el-deftoken <it.name> <it.type>)}; separator="\n">

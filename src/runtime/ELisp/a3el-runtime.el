@@ -412,7 +412,7 @@
 	 (setf (a3el-lexer-context-failed context) nil))))
    (t (signal 'error "Implement t case"))))
 
-(defmacro with-lexer (name &rest body)
+(defmacro a3el-with-lexer (name &rest body)
   `(progn 
      (let ((current-lexer (gethash ',name *a3el-runtime-lexers*)))
        ,@body)))
@@ -638,7 +638,7 @@
   (last-marker -1)
   )
 
-(defmacro with-parser (name &rest body)
+(defmacro a3el-with-parser (name &rest body)
   `(progn 
      (let ((current-parser (gethash ',name *a3el-runtime-parsers*)))
        ,@body)))
