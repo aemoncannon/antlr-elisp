@@ -143,34 +143,35 @@
       (a3el-lexer-input-rewind-to mark))
     ))
 
-
 (defun a3el-dfa-no-viable-alt (s)
   (signal 'a3el-no-viable-alt (list s)))
 
-(defmacro a3el-predictDFA (name)
+(defmacro a3el-lexer-predict-DFA (name)
   `(a3el-predict-DFA-with (gethash ',name (a3el-lexer-dfas (a3el-lexer-context-lexer context)))))
 
-(defmacro a3el-setDFA (name value)
+(defmacro a3el-lexer-set-DFA (name value)
+  "Install a newly instantiated DFA into the lexer (during lexer definition)."
   `(puthash ',name ,value (a3el-lexer-dfas current-lexer)))
 
-(defmacro a3el-defDFA (name value)
-  `(set (intern (concat "*" (format "%s" (a3el-lexer-name current-lexer)) "-" (format "%s" ',name) "*")) ,value))
-
-(defmacro a3el-getDFA (name)
-  `(symbol-value (intern (concat "*" (format "%s" (a3el-lexer-name current-lexer)) "-" (format "%s" ',name) "*"))))
-
 (defmacro a3el-defDFAstruct (name &rest defaults)
+  "Define a custom DFA creation function"
   `(progn 
-     (fset (intern (concat (format "%s" (a3el-lexer-name current-lexer)) "-" (format "%s" ',name))) 
+     (fset ',name
 	   #'(lambda (reco)
 	       (make-a3el-DFA
 		:recognizer reco
 		,@defaults
 		)))
      (unless (fboundp (intern (concat "make-a3el-DFAstruct-" (format "%s" ',name))))
-       (fset (intern (concat "make-a3el-DFAstruct-" (format "%s" ',name))) 
+       (fset (intern (concat "make-a3el-DFAstruct-" (format "%s" ',name)))
 	     #'(lambda ()
-		 (funcall (intern (concat (format "%s" (a3el-lexer-name current-lexer)) "-" (format "%s" ',name))) nil))))))
+		 (funcall ',name nil))))))
+
+
+
+
+
+
 
 
 
@@ -253,7 +254,6 @@
   `(puthash ',name 
 	    (make-a3el-lexer :name ',name) 
 	    *a3el-runtime-lexers*))
-
 
 (defun a3el-lexer-input-LA (n)
   (let ((at (+ (point) (- n 1))))

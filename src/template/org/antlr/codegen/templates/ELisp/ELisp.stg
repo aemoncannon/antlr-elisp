@@ -81,7 +81,7 @@ lexer(grammar, name, tokens, scopes, rules, numRules, labelType="Token",
   <synpreds:{p | <lexerSynpred(p)>}>
 
   <cyclicDFAs:cyclicDFA()> <! dump tables for all DFA !>
-  <cyclicDFAs:{dfa | (a3el-setDFA dfa<dfa.decisionNumber> (make-a3el-DFAstruct-DFA<dfa.decisionNumber>))}; separator="\n">
+  <cyclicDFAs:{dfa | (a3el-lexer-set-DFA dfa<dfa.decisionNumber> (make-a3el-DFAstruct-DFA<dfa.decisionNumber>))}; separator="\n">
 )
 >>
 
@@ -141,9 +141,8 @@ genericParser(grammar, name, scopes, tokens, tokenNames, rules, numRules,
 
     <synpreds:{p | <synpred(p)>}>
 
-    <cyclicDFAs:{dfa | ;; FIXME(DFA:sAgain) <dfa.decisionNumber>}; separator="\n">
     <cyclicDFAs:cyclicDFA()> <! dump tables for all DFA !>
-
+    <cyclicDFAs:{dfa | (a3el-parser-set-DFA dfa<dfa.decisionNumber> (make-a3el-DFAstruct-DFA<dfa.decisionNumber>))}; separator="\n">
 )
 >>
 
@@ -869,7 +868,13 @@ dfaEdgeSwitch(labels, targetState) ::= <<
  *  The <name> attribute is inherited via the parser, lexer, ...
  */
 dfaDecision(decisionNumber,description) ::= <<
-(setq alt<decisionNumber> (a3el-predictDFA dfa<decisionNumber>))
+(setq alt<decisionNumber> 
+      <if(LEXER)>
+      (a3el-lexer-predict-DFA dfa<decisionNumber>)
+      <else>
+      (a3el-parser-predict-DFA dfa<decisionNumber>)
+      <endif>
+       )
 >>
 
 /* Dump DFA tables as run-length-encoded Strings of octal values.
@@ -883,28 +888,39 @@ dfaDecision(decisionNumber,description) ::= <<
 
 cyclicDFA(dfa) ::= <<
 
-(a3el-defDFA DFA<dfa.decisionNumber>_eot [<dfa.eot; wrap="\n", separator=" ", null="-1">])
-(a3el-defDFA DFA<dfa.decisionNumber>_eof [<dfa.eof; wrap="\n", separator=" ", null="-1">])
-(a3el-defDFA DFA<dfa.decisionNumber>_min [<dfa.min; wrap="\n", separator=" ", null="-1">])
-(a3el-defDFA DFA<dfa.decisionNumber>_max [<dfa.max; wrap="\n", separator=" ", null="-1">])
-(a3el-defDFA DFA<dfa.decisionNumber>_accept [<dfa.accept; wrap="\n", separator=" ", null="-1">])
-(a3el-defDFA DFA<dfa.decisionNumber>_special [<dfa.special; wrap="\n", separator=" ", null="-1">])
-(a3el-defDFA DFA<dfa.decisionNumber>_transition [
-        <dfa.transition:{s | [<s; wrap="\n     ", separator=" ", null="-1">]}; separator=" \n", null="">
-    ])
+(setq *<name>-DFA<dfa.decisionNumber>_eot* 
+	      [<dfa.eot; wrap="\n", separator=" ", null="-1">])
+
+(setq *<name>-DFA<dfa.decisionNumber>_eof* 
+	      [<dfa.eof; wrap="\n", separator=" ", null="-1">])
+
+(setq *<name>-DFA<dfa.decisionNumber>_min* 
+	      [<dfa.min; wrap="\n", separator=" ", null="-1">])
+
+(setq *<name>-DFA<dfa.decisionNumber>_max* 
+	      [<dfa.max; wrap="\n", separator=" ", null="-1">])
+
+(setq *<name>-DFA<dfa.decisionNumber>_accept* 
+	      [<dfa.accept; wrap="\n", separator=" ", null="-1">])
+
+(setq *<name>-DFA<dfa.decisionNumber>_special* 
+	      [<dfa.special; wrap="\n", separator=" ", null="-1">])
+
+(setq *<name>-DFA<dfa.decisionNumber>_transition* 
+	      [<dfa.transition:{s | [<s; wrap="\n     ", separator=" ", null="-1">]}; separator=" \n", null="">])
 
 (a3el-defDFAstruct DFA<dfa.decisionNumber>
   :decision-number <dfa.decisionNumber>
-  :eot (a3el-getDFA DFA<dfa.decisionNumber>_eot)
-  :eof (a3el-getDFA DFA<dfa.decisionNumber>_eof)
-  :min (a3el-getDFA DFA<dfa.decisionNumber>_min)
-  :max (a3el-getDFA DFA<dfa.decisionNumber>_max)
-  :accept (a3el-getDFA DFA<dfa.decisionNumber>_accept)
-  :special (a3el-getDFA DFA<dfa.decisionNumber>_special)
-  :transition (a3el-getDFA DFA<dfa.decisionNumber>_transition)
+  :eot *<name>-DFA<dfa.decisionNumber>_eot*
+  :eof *<name>-DFA<dfa.decisionNumber>_eof*
+  :min *<name>-DFA<dfa.decisionNumber>_min*
+  :max *<name>-DFA<dfa.decisionNumber>_max*
+  :accept *<name>-DFA<dfa.decisionNumber>_accept*
+  :special *<name>-DFA<dfa.decisionNumber>_special*
+  :transition *<name>-DFA<dfa.decisionNumber>_transition*
   :description "<dfa.description>"
   <@errorMethod()>
-<if(dfa.specialStateSTs)>
+  <if(dfa.specialStateSTs)>
   :special-state-transition #'(lambda (s)
   (catch 'return
      (let ((s-original s))
@@ -913,7 +929,7 @@ cyclicDFA(dfa) ::= <<
         (<i0> <! compressed special state numbers 0..n-1 !>
             <state>) }; separator="\n">
         )
-<if(backtracking)>
+	<if(backtracking)>
 	<if(LEXER)>
         (when (> (a3el-lexer-context-backtracking context) 0)
           (setf (a3el-lexer-context-failed context) t)
@@ -923,11 +939,11 @@ cyclicDFA(dfa) ::= <<
           (setf (a3el-parser-context-failed context) t)
           (throw 'return -1))<\n>
 	<endif>
-<endif>
+	<endif>
 	)
     (signal 'a3el-no-viable-alt (list "<dfa.description>" <dfa.decisionNumber> s-original))
     ))
-<endif>
+  <endif>
 )
 >>
 

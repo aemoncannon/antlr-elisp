@@ -73,7 +73,7 @@ a:hover {
 .panelHeader{
     color: #FFD210;
     padding: 0px 5px 0px 5px;
-    font-weight: 300;
+    font-weight: 300%;
     text-align: center;
     background-color: #597E66;
 }
