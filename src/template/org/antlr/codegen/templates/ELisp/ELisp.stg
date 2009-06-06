@@ -905,7 +905,8 @@ cyclicDFA(dfa) ::= <<
   :description "<dfa.description>"
   <@errorMethod()>
 <if(dfa.specialStateSTs)>
-  :special-state-transition #'(lambda (s) 
+  :special-state-transition #'(lambda (s)
+  (catch 'return
      (let ((s-original s))
         (a3el-alt-case s
         <dfa.specialStateSTs:{state |
@@ -925,10 +926,11 @@ cyclicDFA(dfa) ::= <<
 <endif>
 	)
     (signal 'a3el-no-viable-alt (list "<dfa.description>" <dfa.decisionNumber> s-original))
-    )
+    ))
 <endif>
 )
 >>
+
 
 /** A state in a cyclic DFA; it's a special state and part of a big switch on
  *  state.
