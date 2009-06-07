@@ -22,6 +22,13 @@
                     nil
                     (do-parse 'css_elispLexer 'css_elispParser 'stylesheet (concat "#dude{ background-image: url(../dude/face.jpg) }\r\n")))
 
+      (assert-equal "A more complicated sheet."
+                    nil
+                    (do-parse 'css_elispLexer 'css_elispParser 'stylesheet (concat "#dude{ color: #ffffff; width: 200px }\r\n"
+										   ".hello{ margin: 0px 2px 3px 3px; }\r\n"
+										   "#hello li .dude{ background-image: '/dude/face.jpg' }\r\n"
+										   )))
+
 
       )
 

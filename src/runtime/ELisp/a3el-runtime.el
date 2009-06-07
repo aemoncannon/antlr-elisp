@@ -88,6 +88,21 @@
 
 
 
+(defmacro a3el-deftoken (name value)
+  `(puthash ',name ,value 
+	    (if (boundp 'current-lexer)
+		(a3el-lexer-tokens current-lexer)
+	      (a3el-parser-tokens current-parser))))
+
+
+(defmacro a3el-defrule (name params &rest body)
+  `(puthash ',name (lambda (context ,@params)
+		     (with-current-buffer current-buffer
+		       ,@body))
+	    (if (boundp 'current-lexer) 
+		(a3el-lexer-rules current-lexer)
+	      (a3el-parser-rules current-parser))))
+
 
 
 (defstruct a3el-DFA
@@ -103,48 +118,6 @@
   description
   special-state-transition
   )
-
-
-(defun a3el-predict-DFA-with (dfa)
-  (let ((mark (a3el-lexer-input-mark)))
-    (unwind-protect
-	(catch 'return
-	  (let ((s 0))
-	    (while t
-	      (catch 'continue
-		(let ((special-state (aref (a3el-DFA-special dfa) s)))
-		  (when (>= special-state 0)
-		    (setq s (funcall (a3el-DFA-special-state-transition dfa) special-state))
-		    (a3el-lexer-input-consume)
-		    (throw 'continue nil))
-		  (when (>= (aref (a3el-DFA-accept dfa) s) 1)
-		    (throw 'return (aref (a3el-DFA-accept dfa) s)))
-		  (let ((c (a3el-lexer-input-LA 1)))
-		    (when (and (>= c (aref (a3el-DFA-min dfa) s)) (<= c (aref (a3el-DFA-max dfa) s)))
-		      (let ((snext (aref (aref (a3el-DFA-transition dfa) s) (- c (aref (a3el-DFA-min dfa) s)) )))
-			(when (< snext 0)
-			  (when (>= (aref (a3el-DFA-eot dfa) s) 0)
-			    (setq s (aref (a3el-DFA-eot dfa) s))
-			    (a3el-lexer-input-consume)
-			    (throw 'continue nil))
-			  (a3el-dfa-no-viable-alt s)
-			  (throw 'return 0))
-			(setq s snext)
-			(a3el-lexer-input-consume)
-			(throw 'continue nil)))
-		    (when (>= (aref (a3el-DFA-eot dfa) s) 0)
-		      (setq s (aref (a3el-DFA-eot dfa) s))
-		      (a3el-lexer-input-consume)
-		      (throw 'continue nil))
-		    (when (and (eq c *a3el-token-eof-token*) (>= (aref (a3el-DFA-eof dfa) s) 0))
-		      (throw 'return (aref (a3el-DFA-accept dfa) (aref (a3el-DFA-eof dfa) s))))
-		    (a3el-dfa-no-viable-alt s)
-		    (throw 'return 0)))))))
-      (a3el-lexer-input-rewind-to mark))
-    ))
-
-(defun a3el-dfa-no-viable-alt (s)
-  (signal 'a3el-no-viable-alt (list s)))
 
 (defmacro a3el-lexer-predict-DFA (name)
   `(a3el-predict-DFA-with (gethash ',name (a3el-lexer-dfas (a3el-lexer-context-lexer context)))))
@@ -176,20 +149,7 @@
 
 
 
-(defmacro a3el-deftoken (name value)
-  `(puthash ',name ,value 
-	    (if (boundp 'current-lexer)
-		(a3el-lexer-tokens current-lexer)
-	      (a3el-parser-tokens current-parser))))
 
-
-(defmacro a3el-defrule (name params &rest body)
-  `(puthash ',name (lambda (context ,@params)
-		     (with-current-buffer current-buffer
-		       ,@body))
-	    (if (boundp 'current-lexer) 
-		(a3el-lexer-rules current-lexer)
-	      (a3el-parser-rules current-parser))))
 
 
 
@@ -203,6 +163,10 @@
   (char-position-in-line -1))
 
 
+
+
+
+
 (defstruct a3el-lexer
   "An Antlr lexer"
   name
@@ -211,6 +175,9 @@
   (dfas (make-hash-table))
   (entry-func nil)
   )
+
+
+
 
 
 (defstruct a3el-lexer-context
@@ -248,24 +215,24 @@
   (char-position-in-line -1)
   )
 
-(defun a3el-lexer-context-pos (context) (point))
+(defmacro a3el-lexer-context-pos () `(point))
 
 (defmacro a3el-deflexer (name)
   `(puthash ',name 
 	    (make-a3el-lexer :name ',name) 
 	    *a3el-runtime-lexers*))
 
-(defun a3el-lexer-input-LA (n)
-  (let ((at (+ (point) (- n 1))))
-    (if (= at (point-max))
-	-1
-      (char-after at))))
+(defmacro a3el-lexer-input-LA (n)
+  `(let ((at (+ (point) (- ,n 1))))
+     (if (= at (point-max))
+	 -1
+       (char-after at))))
   
-(defun a3el-lexer-input-consume ()
-  (goto-char (+ (point) 1)))
+(defmacro a3el-lexer-input-consume ()
+  `(goto-char (+ (point) 1)))
 
-(defun a3el-lexer-match-any ()
-  (a3el-lexer-input-consume))
+(defmacro a3el-lexer-match-any ()
+  `(a3el-lexer-input-consume))
 
 (defun a3el-lexer-token-type (token)
   (a3el-common-token-type token))
@@ -283,74 +250,75 @@
    (t nil)))
 
 
-(defun a3el-lexer-input-mark ()
-  (progn
-    (if (null (a3el-lexer-context-markers context))
-	;; depth 0 means no backtracking, leave blank
-	(setf (a3el-lexer-context-markers context) (list nil)))
-    (incf (a3el-lexer-context-mark-depth context))
-    (let ((state nil))
-      (if (>= (a3el-lexer-context-mark-depth context)
-	      (length (a3el-lexer-context-markers context)))
-	  (progn
-	    (setq state (make-a3el-char-stream-state))
-	    (setf (a3el-lexer-context-markers context) 
-		  (append (a3el-lexer-context-markers context) (list state))))
-	(progn
-	  (setq state (nth (a3el-lexer-context-mark-depth context)
-			   (a3el-lexer-context-markers context)))))
+(defmacro a3el-lexer-input-mark ()
+  `(progn
+     (if (null (a3el-lexer-context-markers context))
+	 ;; depth 0 means no backtracking, leave blank
+	 (setf (a3el-lexer-context-markers context) (list nil)))
+     (incf (a3el-lexer-context-mark-depth context))
+     (let ((state nil))
+       (if (>= (a3el-lexer-context-mark-depth context)
+	       (length (a3el-lexer-context-markers context)))
+	   (progn
+	     (setq state (make-a3el-char-stream-state))
+	     (setf (a3el-lexer-context-markers context) 
+		   (append (a3el-lexer-context-markers context) (list state))))
+	 (progn
+	   (setq state (nth (a3el-lexer-context-mark-depth context)
+			    (a3el-lexer-context-markers context)))))
 
-      (setf (a3el-char-stream-state-pos state) 
-	    (a3el-lexer-context-pos context))
+       (setf (a3el-char-stream-state-pos state) 
+	     (a3el-lexer-context-pos))
 
-      (setf (a3el-char-stream-state-line state)
-	    (a3el-lexer-context-line context))
+       (setf (a3el-char-stream-state-line state)
+	     (a3el-lexer-context-line context))
 
-      (setf (a3el-char-stream-state-char-position-in-line state) 
-	    (a3el-lexer-context-char-position-in-line context))
+       (setf (a3el-char-stream-state-char-position-in-line state) 
+	     (a3el-lexer-context-char-position-in-line context))
 
-      (setf (a3el-lexer-context-last-marker context) 
-	    (a3el-lexer-context-mark-depth context))
+       (setf (a3el-lexer-context-last-marker context) 
+	     (a3el-lexer-context-mark-depth context))
 
-      (a3el-lexer-context-mark-depth context))))
-
-
-
-(defun a3el-lexer-input-rewind-to (m)
-  (let ((state (nth m (a3el-lexer-context-markers context))))
-
-    ;; restore stream state
-
-    (a3el-lexer-input-seek (a3el-char-stream-state-pos state))
-    (setf (a3el-lexer-context-line context)
-	  (a3el-char-stream-state-line state))
-
-    (setf (a3el-lexer-context-char-position-in-line context)
-	  (a3el-char-stream-state-char-position-in-line state))
-
-    (a3el-lexer-input-release m)))
+       (a3el-lexer-context-mark-depth context))))
 
 
-(defun a3el-lexer-input-rewind ()
-  (a3el-lexer-input-rewind-to (a3el-lexer-context-last-marker context)))
+
+(defmacro a3el-lexer-input-rewind-to (m)
+  `(let ((state (nth ,m (a3el-lexer-context-markers context))))
+
+     ;; restore stream state
+
+     (a3el-lexer-input-seek (a3el-char-stream-state-pos state))
+     (setf (a3el-lexer-context-line context)
+	   (a3el-char-stream-state-line state))
+
+     (setf (a3el-lexer-context-char-position-in-line context)
+	   (a3el-char-stream-state-char-position-in-line state))
+
+     (a3el-lexer-input-release ,m)))
 
 
-(defun a3el-lexer-input-release (m)
-  ;;unwind any other markers made after m and release m
-  (setf (a3el-lexer-context-mark-depth context) m)
-  ;;release this marker
-  (decf (a3el-lexer-context-mark-depth context))
-  )
+(defmacro a3el-lexer-input-rewind ()
+  `(a3el-lexer-input-rewind-to (a3el-lexer-context-last-marker context)))
 
 
-(defun a3el-lexer-input-seek (index)
+(defmacro a3el-lexer-input-release (m)
+  `(progn
+     ;;unwind any other markers made after m and release m
+     (setf (a3el-lexer-context-mark-depth context) ,m)
+     ;;release this marker
+     (decf (a3el-lexer-context-mark-depth context))
+     ))
+
+
+(defmacro a3el-lexer-input-seek (index)
   "consume() ahead until p==index; can't just set p=index as we must
    update line and charPositionInLine."
-  (if (<= index (point))
-      (goto-char index) ;; just jump; don't update stream state (line, ...)
-    ;; seek forward, consume until p hits index
-    (while (< (point) index) 
-      (a3el-lexer-input-consume))))
+  `(if (<= ,index (point))
+       (goto-char ,index) ;; just jump; don't update stream state (line, ...)
+     ;; seek forward, consume until p hits index
+     (while (< (point) ,index) 
+       (a3el-lexer-input-consume))))
 
 (defun a3el-lexer-set-type (type)
   (setf (a3el-lexer-context-type context) type))
@@ -504,8 +472,44 @@
   (a3el-lexer-input-consume))
   
 
-
-
+;; Must be defined AFTER required macros
+(defun a3el-predict-DFA-with (dfa)
+  (let ((mark (a3el-lexer-input-mark)))
+    (unwind-protect
+	(catch 'return
+	  (let ((s 0))
+	    (while t
+	      (catch 'continue
+		(let ((special-state (aref (a3el-DFA-special dfa) s)))
+		  (when (>= special-state 0)
+		    (setq s (funcall (a3el-DFA-special-state-transition dfa) special-state))
+		    (a3el-lexer-input-consume)
+		    (throw 'continue nil))
+		  (when (>= (aref (a3el-DFA-accept dfa) s) 1)
+		    (throw 'return (aref (a3el-DFA-accept dfa) s)))
+		  (let ((c (a3el-lexer-input-LA 1)))
+		    (when (and (>= c (aref (a3el-DFA-min dfa) s)) (<= c (aref (a3el-DFA-max dfa) s)))
+		      (let ((snext (aref (aref (a3el-DFA-transition dfa) s) (- c (aref (a3el-DFA-min dfa) s)) )))
+			(when (< snext 0)
+			  (when (>= (aref (a3el-DFA-eot dfa) s) 0)
+			    (setq s (aref (a3el-DFA-eot dfa) s))
+			    (a3el-lexer-input-consume)
+			    (throw 'continue nil))
+			  (signal 'a3el-no-viable-alt (list s))
+			  (throw 'return 0))
+			(setq s snext)
+			(a3el-lexer-input-consume)
+			(throw 'continue nil)))
+		    (when (>= (aref (a3el-DFA-eot dfa) s) 0)
+		      (setq s (aref (a3el-DFA-eot dfa) s))
+		      (a3el-lexer-input-consume)
+		      (throw 'continue nil))
+		    (when (and (eq c *a3el-token-eof-token*) (>= (aref (a3el-DFA-eof dfa) s) 0))
+		      (throw 'return (aref (a3el-DFA-accept dfa) (aref (a3el-DFA-eof dfa) s))))
+		    (signal 'a3el-no-viable-alt (list s))
+		    (throw 'return 0)))))))
+      (a3el-lexer-input-rewind-to mark))
+    ))
 
 
 
@@ -641,22 +645,23 @@
 	    (make-a3el-parser :name ',name) 
 	    *a3el-runtime-parsers*))
 
-(defun a3el-parser-input-mark ()
-  (if (= (a3el-parser-context-pos context) -1) (a3el-parser-fill-buffer))
-  (setf (a3el-parser-context-last-marker context) (a3el-parser-context-pos context))
-  (a3el-parser-context-last-marker context))
+(defmacro a3el-parser-input-mark ()
+  `(progn
+     (if (= (a3el-parser-context-pos context) -1) (a3el-parser-fill-buffer))
+     (setf (a3el-parser-context-last-marker context) (a3el-parser-context-pos context))
+     (a3el-parser-context-last-marker context)))
 
-(defun a3el-parser-input-rewind-to (p)
-  (a3el-parser-input-seek p))
+(defmacro a3el-parser-input-rewind-to (p)
+  `(a3el-parser-input-seek ,p))
 
-(defun a3el-parser-input-rewind ()
-  (a3el-parser-input-seek (a3el-parser-context-last-marker context)))
+(defmacro a3el-parser-input-rewind ()
+  `(a3el-parser-input-seek (a3el-parser-context-last-marker context)))
 
-(defun a3el-parser-input-seek (p)
-  (setf (a3el-parser-context-pos context) p))
+(defmacro a3el-parser-input-seek (p)
+  `(setf (a3el-parser-context-pos context) ,p))
 
-(defun a3el-parser-input-LA (k)
-  (a3el-common-token-type (a3el-parser-input-LT k)))
+(defmacro a3el-parser-input-LA (k)
+  `(a3el-common-token-type (a3el-parser-input-LT ,k)))
 
 
 (defun a3el-parser-input-LT (k)

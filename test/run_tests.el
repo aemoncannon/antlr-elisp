@@ -30,7 +30,7 @@
 (setq max-specpdl-size 5000)
 (setq max-lisp-eval-depth 1000)
 (setq load-path (cons (expand-file-name "build/test/grammars") load-path))
-(setq load-path (cons (expand-file-name "src/runtime/ELisp") load-path))
+(setq load-path (cons (expand-file-name "build/runtime") load-path))
 (setq load-path (cons (expand-file-name "test") load-path))
 
 (require 'a3el-runtime)

@@ -25,6 +25,7 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
+
 group ELisp implements ANTLRCore;
 
 elispTypeInitMap ::= [
@@ -888,6 +889,7 @@ dfaDecision(decisionNumber,description) ::= <<
 
 cyclicDFA(dfa) ::= <<
 
+
 (setq *<name>-DFA<dfa.decisionNumber>_eot* 
 	      [<dfa.eot; wrap="\n", separator=" ", null="-1">])
 
@@ -963,7 +965,7 @@ cyclicDFAState(decisionNumber,stateNumber,edges,needErrorClause,semPredState) ::
   
   <if(semPredState)> <! get next lookahead symbol to test edges, then rewind !>
     <if(LEXER)>
-    (setq index<decisionNumber>_<stateNumber>  (a3el-lexer-context-pos context))
+    (setq index<decisionNumber>_<stateNumber>  (a3el-lexer-context-pos))
     (a3el-lexer-input-rewind)<\n>
     <else>
     (setq index<decisionNumber>_<stateNumber>  (a3el-parser-context-pos context))
