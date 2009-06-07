@@ -28,8 +28,17 @@
 
 group ELisp implements ANTLRCore;
 
-elispTypeInitMap ::= [
-	default:"nil"
+
+javaTypeInitMap ::= [
+    "int":"0",
+    "long":"0",
+    "float":"0.0",
+    "double":"0.0",
+    "boolean":"false",
+    "byte":"0",
+    "short":"0",
+    "char":"0",
+    default: "nil"
 ]
 
 /** The overall file structure of a recognizer; stores methods for rules
@@ -323,11 +332,11 @@ lexerRuleLabelDefs() ::= <<
   ruleDescriptor.ruleLabels]
     :{<labelType> <it.label.text>=null;}; separator="\n"
 >
-<ruleDescriptor.charLabels:{int <it.label.text>;}; separator="\n">
+<ruleDescriptor.charLabels:{;; int <it.label.text>;}; separator="\n">
 <[ruleDescriptor.tokenListLabels,
   ruleDescriptor.ruleListLabels,
   ruleDescriptor.ruleListLabels]
-    :{List list_<it.label.text>=null;}; separator="\n"
+    :{;; List list_<it.label.text>=null;}; separator="\n"
 >
 >>
 
@@ -337,7 +346,9 @@ ruleReturnValue() ::= <<
 <if(ruleDescriptor.hasSingleReturnValue)>
 <ruleDescriptor.singleValueReturnName>
 <else>
-retval
+;;TODO
+;;retval
+
 <endif>
 <endif>
 <endif>
@@ -346,7 +357,8 @@ retval
 ruleCleanUp() ::= <<
 <if(ruleDescriptor.hasMultipleReturnValues)>
 <if(!TREE_PARSER)>
-retval.stop = input.LT(-1);<\n>
+;; TODO
+;;retval.stop = input.LT(-1);<\n>
 <endif>
 <endif>
 >>
@@ -713,9 +725,10 @@ lexerRuleRefAndListLabel(rule,label,args,elementIndex) ::= <<
 /** EOF in the lexer */
 lexerMatchEOF(label,elementIndex) ::= <<
 <if(label)>
-int <label>Start<elementIndex> = getCharIndex();
-(a3el-lexer-match EOF) <checkRuleBacktrackFailure()>
-<labelType> <label> = new CommonToken(input, EOF, Token.DEFAULT_CHANNEL, <label>Start<elementIndex>, getCharIndex()-1);
+;; TODO
+;;int <label>Start<elementIndex> = getCharIndex();
+;;(a3el-lexer-match EOF) <checkRuleBacktrackFailure()>
+;;<labelType> <label> = new CommonToken(input, EOF, Token.DEFAULT_CHANNEL, <label>Start<elementIndex>, getCharIndex()-1);
 <else>
 (a3el-lexer-match EOF) <checkRuleBacktrackFailure()>
 <endif>
@@ -1110,7 +1123,7 @@ initValue(typeName) ::= <<
 
 /** Define a rule label including default value */
 ruleLabelDef(label) ::= <<
-<ruleLabelType(referencedRule=label.referencedRule)> <label.label.text> = <initValue(typeName=ruleLabelType(referencedRule=label.referencedRule))>;<\n>
+;; TODO <ruleLabelType(referencedRule=label.referencedRule)> <label.label.text> = <initValue(typeName=ruleLabelType(referencedRule=label.referencedRule))>;<\n>
 >>
 
 /** Define a return struct for a rule if the code needs to access its
@@ -1119,10 +1132,11 @@ ruleLabelDef(label) ::= <<
  */
 returnScope(scope) ::= <<
 <if(ruleDescriptor.hasMultipleReturnValues)>
-public static class <returnType()> extends <if(TREE_PARSER)>Tree<else>Parser<endif>RuleReturnScope {
-    <scope.attributes:{public <it.decl>;}; separator="\n">
-    <@ruleReturnMembers()>
-};
+;; TODO 
+;;public static class <returnType()> extends <if(TREE_PARSER)>Tree<else>Parser<endif>RuleReturnScope {
+;;    <scope.attributes:{public <it.decl>;}; separator="\n">
+;;    <@ruleReturnMembers()>
+;;};
 <endif>
 >>
 

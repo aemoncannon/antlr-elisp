@@ -3,6 +3,7 @@ grammar css_elisp;
 options {
 	language=ELisp;
 	k=4;
+	output=AST;
 }
 
 tokens{
