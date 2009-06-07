@@ -18,17 +18,10 @@ file RUNTIME_TARGET => [RUNTIME_SRC] do
 end
 
 
-task :prepare => BUILD_DIRS + [RUNTIME_TARGET]
-
-
 file JAVA_UPTODATE => [:prepare] + JAVA_SOURCE_FILES do
   sh "javac -d #{JAVA_CLASS_DIR} -sourcepath #{JAVA_SRCPATH} -cp #{JAVA_CLASSPATH.join(":")} #{JAVA_SOURCE_FILES.join(" ")}"
   touch JAVA_UPTODATE
 end
-
-task :compile => JAVA_UPTODATE
-
-
 
 def grammar_targets_for(src)
   if src =~ /\/([^\/]+_elisp).g$/
@@ -45,12 +38,20 @@ GRAMMARS.each{|g|
   }
 }
 
-task :gen_parsers => GRAMMARS.collect{|g| grammar_targets_for(g) }.flatten
 
+
+
+# public tasks
+
+task :compile => JAVA_UPTODATE
+
+task :gen_parsers => GRAMMARS.collect{|g| grammar_targets_for(g) }.flatten
 
 task :test => [:compile, :gen_parsers] do
   sh "emacs -batch -q -l test/run_tests.el"
 end
+
+task :prepare => BUILD_DIRS + [RUNTIME_TARGET]
 
 task :clean => [] do
   rm_rf BUILD_DIRS

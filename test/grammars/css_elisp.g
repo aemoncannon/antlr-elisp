@@ -10,7 +10,6 @@ tokens{
 }
 
 
-
 stylesheet
   : 
         (CHARSET_SYM STRING SEMI)?
