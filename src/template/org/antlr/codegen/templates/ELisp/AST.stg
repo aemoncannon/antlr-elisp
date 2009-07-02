@@ -57,7 +57,7 @@ parserMembers() ::= <<
 /** Add a variable to track rule's return AST */
 ruleDeclarations() ::= <<
 <super.ruleDeclarations()>
-;; TODO <ASTLabelType> root_0 = null;<\n>
+(root_0 nil)<\n>
 >>
 
 ruleLabelDefs() ::= <<
@@ -94,8 +94,8 @@ ruleCleanUp() ::= <<
 @alt.declarations() ::= <<
 <if(autoAST)>
 <if(outerAlt)>
-;; TODO
-;; root_0 = (<ASTLabelType>)adaptor.nil();<\n>
+;; TODO need to define the adapter shiiite
+;;(setq root_0 (a3el-tree-adapter-nil adaptor))<\n>
 <endif>
 <endif>
 >>

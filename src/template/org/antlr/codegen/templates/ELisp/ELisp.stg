@@ -253,8 +253,10 @@ rule(ruleName,ruleDescriptor,block,emptyRule,description,exceptions,finally,memo
 (a3el-defrule <ruleName> (<ruleDescriptor.parameterScope:parameterScope(scope=it)>)
   <if(trace)>(trace-in "<ruleName>" <ruleDescriptor.index>)<endif>
   <ruleScopeSetUp()>
+  (let (
   <ruleDeclarations()>
   <ruleLabelDefs()>
+  )
   <ruleDescriptor.actions.init>
   <@preamble()>
   (catch 'rule-return
@@ -293,7 +295,7 @@ rule(ruleName,ruleDescriptor,block,emptyRule,description,exceptions,finally,memo
     <finally>)
     <@postamble()>
     <ruleReturnValue()>
-)
+))
 )
 ;; $ANTLR end <ruleName>
 >>
@@ -346,7 +348,7 @@ ruleReturnValue() ::= <<
 <if(ruleDescriptor.hasSingleReturnValue)>
 <ruleDescriptor.singleValueReturnName>
 <else>
-;;TODO
+;;TODO1
 ;;retval
 
 <endif>
@@ -357,7 +359,7 @@ ruleReturnValue() ::= <<
 ruleCleanUp() ::= <<
 <if(ruleDescriptor.hasMultipleReturnValues)>
 <if(!TREE_PARSER)>
-;; TODO
+;; TODO2
 ;;retval.stop = input.LT(-1);<\n>
 <endif>
 <endif>
@@ -725,7 +727,7 @@ lexerRuleRefAndListLabel(rule,label,args,elementIndex) ::= <<
 /** EOF in the lexer */
 lexerMatchEOF(label,elementIndex) ::= <<
 <if(label)>
-;; TODO
+;; TODO3
 ;;int <label>Start<elementIndex> = getCharIndex();
 ;;(a3el-lexer-match EOF) <checkRuleBacktrackFailure()>
 ;;<labelType> <label> = new CommonToken(input, EOF, Token.DEFAULT_CHANNEL, <label>Start<elementIndex>, getCharIndex()-1);
@@ -1123,7 +1125,7 @@ initValue(typeName) ::= <<
 
 /** Define a rule label including default value */
 ruleLabelDef(label) ::= <<
-;; TODO <ruleLabelType(referencedRule=label.referencedRule)> <label.label.text> = <initValue(typeName=ruleLabelType(referencedRule=label.referencedRule))>;<\n>
+(<label.label.text> <initValue(typeName=ruleLabelType(referencedRule=label.referencedRule))>)<\n>
 >>
 
 /** Define a return struct for a rule if the code needs to access its
