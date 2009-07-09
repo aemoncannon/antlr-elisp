@@ -305,6 +305,18 @@ catch(decl,action) ::= <<
 >>
 
 ruleDeclarations() ::= <<
+<if(ruleDescriptor.hasMultipleReturnValues)>
+(retval (let ((r (make-a3el-retval)))
+	     (setf (a3el-retval-start r) (a3el-parser-input-LT 1))
+	     r))<\n>
+<else>
+<ruleDescriptor.returnScope.attributes:{ a |
+(<a.name> <if(a.initValue)><a.initValue><else>nil<endif>)<\n>
+}>
+<endif>
+<if(memoize)>
+(<ruleDescriptor.name>_StartIndex (a3el-parser-context-pos))
+<endif>
 >>
 
 ruleScopeSetUp() ::= <<
@@ -319,26 +331,27 @@ ruleScopeCleanUp() ::= <<
 
 ruleLabelDefs() ::= <<
 <[ruleDescriptor.tokenLabels,ruleDescriptor.tokenListLabels]
-    :{;; FIXME(rule_label_defs)}; separator="\n"
+    :{(<it.label.text> nil)}; separator="\n"
 >
 <[ruleDescriptor.tokenListLabels,ruleDescriptor.ruleListLabels]
-    :{;; FIXME(rule_label_defs2)}; separator="\n"
+    :{(list_<it.label.text> nil)}; separator="\n"
 >
 <ruleDescriptor.ruleLabels:ruleLabelDef(label=it); separator="\n">
-<ruleDescriptor.ruleListLabels:{ll|;; FIXME(rule_label_defs3)}; separator="\n">
+<ruleDescriptor.ruleListLabels:{ll|(list_<it.label.text> nil)}; separator="\n">
 >>
-/*CUTOFF*/
+
+
 lexerRuleLabelDefs() ::= <<
 <[ruleDescriptor.tokenLabels,
   ruleDescriptor.tokenListLabels,
   ruleDescriptor.ruleLabels]
-    :{<labelType> <it.label.text>=null;}; separator="\n"
+    :{(<it.label.text> nil)}; separator="\n"
 >
-<ruleDescriptor.charLabels:{;; int <it.label.text>;}; separator="\n">
+<ruleDescriptor.charLabels:{(<it.label.text> nil)}; separator="\n">
 <[ruleDescriptor.tokenListLabels,
   ruleDescriptor.ruleListLabels,
   ruleDescriptor.ruleListLabels]
-    :{;; List list_<it.label.text>=null;}; separator="\n"
+    :{(list_<it.label.text> nil)}; separator="\n"
 >
 >>
 
@@ -348,9 +361,7 @@ ruleReturnValue() ::= <<
 <if(ruleDescriptor.hasSingleReturnValue)>
 <ruleDescriptor.singleValueReturnName>
 <else>
-;;TODO1
-;;retval
-
+retval
 <endif>
 <endif>
 <endif>
@@ -359,8 +370,7 @@ ruleReturnValue() ::= <<
 ruleCleanUp() ::= <<
 <if(ruleDescriptor.hasMultipleReturnValues)>
 <if(!TREE_PARSER)>
-;; TODO2
-;;retval.stop = input.LT(-1);<\n>
+(setf (a3el-retval-stop retval) (a3el-parser-input-LT -1))<\n>
 <endif>
 <endif>
 >>
@@ -1131,16 +1141,10 @@ ruleLabelDef(label) ::= <<
 /** Define a return struct for a rule if the code needs to access its
  *  start/stop tokens, tree stuff, attributes, ...  Leave a hole for
  *  subgroups to stick in members.
+ *
+ * NOTE: Elisp doesn't need this, we use a3el-retval for everything.
  */
-returnScope(scope) ::= <<
-<if(ruleDescriptor.hasMultipleReturnValues)>
-;; TODO 
-;;public static class <returnType()> extends <if(TREE_PARSER)>Tree<else>Parser<endif>RuleReturnScope {
-;;    <scope.attributes:{public <it.decl>;}; separator="\n">
-;;    <@ruleReturnMembers()>
-;;};
-<endif>
->>
+returnScope(scope) ::= <<>>
 
 parameterScope(scope) ::= <<
 <scope.attributes:{<it.decl>}; separator=", ">
@@ -1190,7 +1194,7 @@ ruleLabelRef(referencedRule,scope,attr) ::= <<
 
 returnAttributeRef(ruleDescriptor,attr) ::= <<
 <if(ruleDescriptor.hasMultipleReturnValues)>
-retval.<attr.name>
+(a3el-retval-<attr.name> retval)
 <else>
 <attr.name>
 <endif>
@@ -1198,9 +1202,9 @@ retval.<attr.name>
 
 returnSetAttributeRef(ruleDescriptor,attr,expr) ::= <<
 <if(ruleDescriptor.hasMultipleReturnValues)>
-retval.<attr.name> =<expr>;
+(setf (a3el-retval-<attr.name> retval) <expr>)
 <else>
-<attr.name> =<expr>;
+(setq <attr.name> <expr>)
 <endif>
 >>
 
@@ -1247,9 +1251,9 @@ lexerRuleLabelPropertyRef_index(scope,attr) ::= "<scope>.getTokenIndex()"
 lexerRuleLabelPropertyRef_text(scope,attr) ::= "<scope>.getText()"
 
 // Somebody may ref $template or $tree or $stop within a rule:
-rulePropertyRef_start(scope,attr) ::= "((<labelType>)retval.start)"
-rulePropertyRef_stop(scope,attr) ::= "((<labelType>)retval.stop)"
-rulePropertyRef_tree(scope,attr) ::= "((<ASTLabelType>)retval.tree)"
+rulePropertyRef_start(scope,attr) ::= "(a3el-retval-start retval)"
+rulePropertyRef_stop(scope,attr) ::= "(a3el-retval-stop retval)"
+rulePropertyRef_tree(scope,attr) ::= "(a3el-retval-tree retval)"
 rulePropertyRef_text(scope,attr) ::= <<
 <if(TREE_PARSER)>
 input.getTokenStream().toString(
@@ -1259,7 +1263,7 @@ input.getTokenStream().toString(
 input.toString(retval.start,input.LT(-1))
 <endif>
 >>
-rulePropertyRef_st(scope,attr) ::= "retval.st"
+rulePropertyRef_st(scope,attr) ::= "(a3el-retval-st retval)"
 
 lexerRulePropertyRef_text(scope,attr) ::= "getText()"
 lexerRulePropertyRef_type(scope,attr) ::= "_type"
@@ -1272,8 +1276,8 @@ lexerRulePropertyRef_stop(scope,attr) ::= "(getCharIndex()-1)"
 
 // setting $st and $tree is allowed in local rule. everything else
 // is flagged as error
-ruleSetPropertyRef_tree(scope,attr,expr) ::= "retval.tree =<expr>;"
-ruleSetPropertyRef_st(scope,attr,expr) ::= "retval.st =<expr>;"
+ruleSetPropertyRef_tree(scope,attr,expr) ::= "(setf (a3el-retval-tree retval) <expr>)"
+ruleSetPropertyRef_st(scope,attr,expr) ::= "(setf (a3el-retval-st retval) <expr>)"
 
 
 /** How to execute an action */

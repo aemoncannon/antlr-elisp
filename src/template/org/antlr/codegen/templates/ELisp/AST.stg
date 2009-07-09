@@ -49,10 +49,6 @@ parserMembers() ::= <<
 ;;}
 >>
 
-@returnScope.ruleReturnMembers() ::= <<
-;; <ASTLabelType> tree;
-;; TODO public Object getTree() { return tree; }
->>
 
 /** Add a variable to track rule's return AST */
 ruleDeclarations() ::= <<

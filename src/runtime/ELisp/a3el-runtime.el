@@ -59,6 +59,16 @@
 
 
 
+
+(defstruct a3el-retval
+  "A rule's return value."
+  start
+  stop
+  st
+  tree)
+
+
+
 (defstruct a3el-common-token
   "A Common Antlr token"
   input
@@ -676,7 +686,7 @@
 	  (n 1))
       (while (< n k)
 	;;skip off-channel tokens
-	(setf i (a3el-parser-skip-off-token-channels (+ i 1)))
+	(setq i (a3el-parser-skip-off-token-channels (+ i 1)))
 	(incf n))
       (let ((token-buffer (a3el-parser-context-token-buffer context)))
 	(if (>= i (length token-buffer))
@@ -687,7 +697,19 @@
 
 (defun a3el-parser-input-LB (k)
   "Look backwards k tokens on-channel tokens"
-  (throw 'error "Not implemented!"))
+  (catch 'return
+    (if (= (a3el-parser-context-pos context) -1) (a3el-parser-fill-buffer))
+    (if (= k 0) (throw 'return nil))
+    (if (< (- (a3el-parser-context-pos context) k) 0) (throw 'return nil))
+    (let ((i (a3el-parser-context-pos context))
+	  (n 1))
+      ;;find k good tokens looking backwards
+      (while (<= n k)
+	;;skip off-channel tokens
+	(setq i (a3el-parser-skip-off-token-channels-reverse (- i 1)))
+	(incf n))
+      (if (< i 0) (throw 'return nil))
+      (aref (a3el-parser-context-token-buffer context) i))))
 
 
 (defun a3el-parser-match (ttype follow)
@@ -837,6 +859,15 @@
 	 (n (length token-buffer)))
     (while (and (< i n) (/= (a3el-common-token-channel (aref token-buffer i)) channel))
       (incf i))
+    i))
+
+
+(defun a3el-parser-skip-off-token-channels-reverse (i)
+  "Given a starting index, return the index of the first on-channel token."
+  (let* ((token-buffer (a3el-parser-context-token-buffer context))
+	 (channel (a3el-parser-context-channel context)))
+    (while (and (>= i 0) (/= (a3el-common-token-channel (aref token-buffer i)) channel))
+      (decf i))
     i))
 
 
