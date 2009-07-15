@@ -58,9 +58,8 @@ ruleDeclarations() ::= <<
 
 ruleLabelDefs() ::= <<
 <super.ruleLabelDefs()>
-;; TODO
-<ruleDescriptor.tokenLabels:{;; <ASTLabelType> <it.label.text>_tree=null;}; separator="\n">
-<ruleDescriptor.tokenListLabels:{;; <ASTLabelType> <it.label.text>_tree=null;}; separator="\n">
+<ruleDescriptor.tokenLabels:{(<it.label.text>_tree nil)}; separator="\n">
+<ruleDescriptor.tokenListLabels:{<it.label.text>_tree nil)}; separator="\n">
 <ruleDescriptor.allTokenRefsInAltsWithRewrites
     :{;; RewriteRuleTokenStream stream_<it>=new RewriteRuleTokenStream(adaptor,"token <it>");}; separator="\n">
 <ruleDescriptor.allRuleRefsInAltsWithRewrites
