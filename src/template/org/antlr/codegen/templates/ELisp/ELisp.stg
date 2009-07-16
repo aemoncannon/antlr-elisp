@@ -179,7 +179,7 @@ synpredRule(ruleName, ruleDescriptor, block, description, nakedBlock) ::=
 ;; $ANTLR start <ruleName>
 (a3el-defrule <ruleName>_fragment (<ruleDescriptor.parameterScope:parameterScope(scope=it)>)
   <if(trace)>(trace-in "<ruleName>_fragment" <ruleDescriptor.index>)<endif>
-  (catch 'return
+  (catch 'rule-return
   (unwind-protect
     (progn 
         <block>
