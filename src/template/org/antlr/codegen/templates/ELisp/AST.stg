@@ -39,14 +39,7 @@ group AST;
 
 /** Add an adaptor property that knows how to build trees */
 parserMembers() ::= <<
-;; TODO
-;;protected TreeAdaptor adaptor = new CommonTreeAdaptor();<\n>
-;;public void setTreeAdaptor(TreeAdaptor adaptor) {
-;;    this.adaptor = adaptor;
-;;}
-;;public TreeAdaptor getTreeAdaptor() {
-;;    return adaptor;
-;;}
+;; We don't need this.
 >>
 
 
@@ -70,13 +63,12 @@ ruleCleanUp() ::= <<
 <super.ruleCleanUp()>
 <if(ruleDescriptor.hasMultipleReturnValues)>
 <if(backtracking)>
-;;TODO 
-;; if ( backtracking==0 ) {<\n>
-;;<endif>
-;;    retval.tree = (<ASTLabelType>)adaptor.rulePostProcessing(root_0);
-;;    adaptor.setTokenBoundaries(retval.tree, retval.start, retval.stop);
-;;<if(backtracking)>
-;;}
+(if (= (a3el-parser-context-backtracking context) 0)<\n>
+<endif>
+(setf (a3el-retval-tree retval) (funcall adaptor-rule-post-processing root_0))
+(funcall adaptor-set-token-boundaries (a3el-retval-tree retval) (a3el-retval-start retval) (a3el-retval-stop retval))
+<if(backtracking)>
+)
 <endif>
 <endif>
 >>
@@ -89,8 +81,7 @@ ruleCleanUp() ::= <<
 @alt.declarations() ::= <<
 <if(autoAST)>
 <if(outerAlt)>
-;; TODO need to define the adapter shiiite
-;;(setq root_0 (a3el-tree-adapter-nil adaptor))<\n>
+(setq root_0 (funcall adaptor-new-nil))<\n>
 <endif>
 <endif>
 >>
@@ -100,11 +91,11 @@ ruleCleanUp() ::= <<
 /** ID and output=AST */
 tokenRef(token,label,elementIndex) ::= <<
 <super.tokenRef(...)>
-;; TODO
-;;<if(backtracking)>if ( backtracking==0 ) {<endif>
-;;<label>_tree = (<ASTLabelType>)adaptor.create(<label>);
-;;adaptor.addChild(root_0, <label>_tree);
-;;<if(backtracking)>}<endif>
+<if(backtracking)>(if (= (a3el-parser-context-backtracking context) 0)<endif>
+(progn
+(setq <label>_tree (funcall adaptor-create <label>))
+(funcall adaptor-add-child root_0 <label>_tree))
+<if(backtracking)>)<endif>
 >>
 
 /** ID! and output=AST (same as plain tokenRef) */
@@ -113,39 +104,36 @@ tokenRefBang(token,label,elementIndex) ::= "<super.tokenRef(...)>"
 /** ID^ and output=AST */
 tokenRefRuleRoot(token,label,elementIndex) ::= <<
 <super.tokenRef(...)>
-;; TODO
-;;<if(backtracking)>if ( backtracking==0 ) {<endif>
-;;<label>_tree = (<ASTLabelType>)adaptor.create(<label>);
-;;root_0 = (<ASTLabelType>)adaptor.becomeRoot(<label>_tree, root_0);
-;;<if(backtracking)>}<endif>
+<if(backtracking)>(if (= (a3el-parser-context-backtracking context) 0)<endif>
+(progn
+(setq <label>_tree = (funcall adaptor-create <label>))
+(setq root_0 (funcall adaptor-become-root <label>_tree root_0)))
+<if(backtracking)>)<endif>
 >>
 
 /** ids+=ID! and output=AST */
 tokenRefBangAndListLabel(token,label,elementIndex) ::= <<
-;; TODO
-;;<tokenRefBang(...)>
-;;<listLabel(elem=label,...)>
+<tokenRefBang(...)>
+<listLabel(elem=label,...)>
 >>
 
 /** label+=TOKEN when output=AST but not rewrite alt */
 tokenRefAndListLabel(token,label,elementIndex) ::= <<
-;; TODO
-;;<tokenRef(...)>
-;;<listLabel(elem=label,...)>
+<tokenRef(...)>
+<listLabel(elem=label,...)>
 >>
 
 /** Match label+=TOKEN^ when output=AST but not rewrite alt */
 tokenRefRuleRootAndListLabel(token,label,elementIndex) ::= <<
-;; TODO
-;;<tokenRefRuleRoot(...)>
-;;<listLabel(elem=label,...)>
+<tokenRefRuleRoot(...)>
+<listLabel(elem=label,...)>
 >>
 
 /** ID but track it for use in a rewrite rule */
 tokenRefTrack(token,label,elementIndex) ::= <<
- <super.tokenRef(...)>
 ;; TODO
-;; <if(backtracking)>if ( backtracking==0 ) <endif>stream_<token>.add(<label>);<\n>
+;; <super.tokenRef(...)>
+;; <if(backtracking)>(if (= (a3el-parser-context-backtracking context) 0) <endif>stream_<token>.add(<label>);<\n>
 >>
 
 /** ids+=ID and track it for use in a rewrite rule; adds to ids *and*
@@ -171,7 +159,11 @@ tokenRefTrackAndListLabel(token,label,elementIndex) ::= <<
 // I have more time.
 
 matchSet(s,label,elementIndex,postmatchCode) ::= <<
-;; TODO <super.matchSet(..., postmatchCode={;;<if(backtracking)>if ( backtracking==0 ) <endif>adaptor.addChild(root_0, adaptor.create(<label>));})>
+<super.matchSet(..., postmatchCode={
+		     <if(backtracking)>(if (= (a3el-parser-context-backtracking context) 0) <endif>
+		     (funcall adaptor-add-child root_0 (funcall adaptor-create <label>))
+		     <if(backtracking)>)<endif>
+})>
 >>
 
 matchSetBang(s,label,elementIndex,postmatchCode) ::= "<super.matchSet(...)>"
@@ -180,7 +172,11 @@ matchSetBang(s,label,elementIndex,postmatchCode) ::= "<super.matchSet(...)>"
 // plain old blocks of alts: (A|B|...|C)
 
 matchSetRuleRoot(s,label,elementIndex,debug) ::= <<
-;; TODO <super.matchSet(..., postmatchCode={<if(backtracking)>if ( backtracking==0 ) <endif>root_0 = (<ASTLabelType>)adaptor.becomeRoot(adaptor.create(<label>), root_0);})>
+<super.matchSet(..., postmatchCode={
+		     <if(backtracking)>(if (= (a3el-parser-context-backtracking context) 0) <endif>
+		     (setq root_0  (funcall adaptor-become-root (funcall adaptor-create <label>) root_0))
+		     <if(backtracking)>)<endif>
+})>
 >>
 
 // RULE REF AST
@@ -188,7 +184,9 @@ matchSetRuleRoot(s,label,elementIndex,debug) ::= <<
 /** rule when output=AST */
 ruleRef(rule,label,elementIndex,args) ::= <<
 <super.ruleRef(...)>
-;; TODO <if(backtracking)>if ( backtracking==0 ) <endif>adaptor.addChild(root_0, <label>.getTree());
+<if(backtracking)>(if (= (a3el-parser-context-backtracking context) 0) <endif>
+(funcall adaptor-add-child root_0 (a3el-retval-tree <label>))
+<if(backtracking)>)<endif>
 >>
 
 /** rule! is same as normal rule ref */
@@ -197,7 +195,9 @@ ruleRefBang(rule,label,elementIndex,args) ::= "<super.ruleRef(...)>"
 /** rule^ */
 ruleRefRuleRoot(rule,label,elementIndex,args) ::= <<
 <super.ruleRef(...)>
-;; TODO <if(backtracking)>if ( backtracking==0 ) <endif>root_0 = (<ASTLabelType>)adaptor.becomeRoot(<label>.getTree(), root_0);
+<if(backtracking)>(if (= (a3el-parser-context-backtracking context) 0) <endif>
+(setq root_0 (funcall adaptor-become-root (a3el-retval-tree <label>) root_0))
+<if(backtracking)>)<endif>
 >>
 
 /** rule when output=AST and tracking for rewrite */
@@ -209,47 +209,47 @@ ruleRefTrack(rule,label,elementIndex,args) ::= <<
 /** x+=rule when output=AST and tracking for rewrite */
 ruleRefTrackAndListLabel(rule,label,elementIndex,args) ::= <<
 <ruleRefTrack(...)>
-;; TODO <listLabel(elem=label,...)>
+<listLabel(elem=label,...)>
 >>
 
 /** x+=rule when output=AST */
 ruleRefAndListLabel(rule,label,elementIndex,args) ::= <<
 <ruleRef(...)>
-;; TODO <listLabel(elem=label+".getTree()",...)>
+<listLabel(elem="(a3el-retval-tree <label>)",...)>
 >>
 
 /** x+=rule! when output=AST is a rule ref with list addition */
 ruleRefBangAndListLabel(rule,label,elementIndex,args) ::= <<
 <ruleRefBang(...)>
-;; TODO <listLabel(elem=label+".getTree()",...)>
+<listLabel(elem="(a3el-retval-tree <label>)",...)>
 >>
 
 /** x+=rule^ */
 ruleRefRuleRootAndListLabel(rule,label,elementIndex,args) ::= <<
 <ruleRefRuleRoot(...)>
-;; TODO <listLabel(elem=label+".getTree()",...)>
+<listLabel(elem="(a3el-retval-tree <label>)",...)>
 >>
 
 // WILDCARD AST
 
 wildcard(label,elementIndex) ::= <<
 <super.wildcard(...)>
-;; TODO
-;;<if(backtracking)>if ( backtracking==0 ) {<endif>
-;;<label>_tree = (<ASTLabelType>)adaptor.create(<label>);
-;;adaptor.addChild(root_0, <label>_tree);
-;;<if(backtracking)>}<endif>
+<if(backtracking)>(if (= (a3el-parser-context-backtracking context) 0) <endif>
+(progn
+(setq <label>_tree (funcall adaptor-create <label>))
+(funcall adaptor-add-child root_0 <label>_tree))
+<if(backtracking)>)<endif>
 >>
 
 wildcardBang(label,elementIndex) ::= "<super.wildcard(...)>"
 
 wildcardRuleRoot(label,elementIndex) ::= <<
 <super.wildcard(...)>
-;; TODO
-;;<if(backtracking)>if ( backtracking==0 ) {<endif>
-;;<label>_tree = (<ASTLabelType>)adaptor.create(<label>);
-;;root_0 = (<ASTLabelType>)adaptor.becomeRoot(<label>_tree, root_0);
-;;<if(backtracking)>}<endif>
+<if(backtracking)>(if (= (a3el-parser-context-backtracking context) 0) <endif>
+(progn
+(setq <label>_tree (funcall adaptor-create <label>))
+(setq root_0 (funcall adaptor-become-root <label>_tree root_0)))
+<if(backtracking)>)<endif>
 >>
 
 // TODO: ugh, am i really missing the combinations for Track and ListLabel?

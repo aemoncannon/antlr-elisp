@@ -60,6 +60,29 @@
 
 
 
+
+(defstruct a3el-tree-adaptor
+  "A rule's return value."
+  (new-nil 
+   #'(lambda () nil))
+
+  (create 
+   #'(lambda (token) nil))
+
+  (add-child
+   #'(lambda (parent child) ))
+
+  (become-root
+   #'(lambda (new-root root) ))
+
+  (rule-post-processing
+   #'(lambda (tree) tree))
+
+  (set-token-boundaries
+   #'(lambda () ))
+  )
+
+
 (defstruct a3el-retval
   "A rule's return value."
   start
@@ -615,6 +638,7 @@
   (rules (make-hash-table))
   (bitsets (make-hash-table))
   (entry-func nil)
+  (tree-adaptor (make-a3el-tree-adaptor))
   )
 
 

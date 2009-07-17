@@ -70,6 +70,7 @@ lexer(grammar, name, tokens, scopes, rules, numRules, labelType="Token",
 
  (a3el-with-lexer <name>
 
+    ;; Define entry function for this lexer. Sets up dynamic environment.
    (setf (a3el-lexer-entry-func current-lexer) #'(lambda (context name)
     (let* (
     	(current-buffer (a3el-lexer-context-input context))
@@ -115,11 +116,22 @@ genericParser(grammar, name, scopes, tokens, tokenNames, rules, numRules,
 
   (a3el-with-parser <name>
 
+
+    ;; Define entry function for this parser. Sets up dynamic environment.
    (setf (a3el-parser-entry-func current-parser) #'(lambda (context name)
     (let* (
         (current-lexer (a3el-lexer-context-lexer (a3el-parser-context-input context)))
         (current-parser (a3el-parser-context-parser context))
     	(current-buffer (a3el-lexer-context-input (a3el-parser-context-input context)))
+
+    	(adaptor (a3el-parser-tree-adaptor current-parser))
+    	(adaptor-new-nil (a3el-tree-adaptor-new-nil adaptor))
+    	(adaptor-create (a3el-tree-adaptor-create adaptor))
+    	(adaptor-add-child (a3el-tree-adaptor-add-child adaptor))
+    	(adaptor-become-root (a3el-tree-adaptor-become-root adaptor))
+    	(adaptor-rule-post-processing (a3el-tree-adaptor-rule-post-processing adaptor))
+    	(adaptor-set-token-boundaries (a3el-tree-adaptor-set-token-boundaries adaptor))
+
 	(rule-func (gethash name (a3el-parser-rules current-parser)))
 	(bitsets (a3el-parser-bitsets current-parser))
         <tokens:{(<it.name> <it.type>)}; separator="\n">
