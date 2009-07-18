@@ -35,7 +35,7 @@
   "Keeps track of all parsers defined in the system, including their definitions") 
 
 
-;; Recognizer error types
+;; Error types
 
 (put 'a3el-mismatched-token 'error-conditions
      '(error a3el-re-error))
@@ -58,14 +58,169 @@
 (put 'a3el-mismatched-range 'error-message "Mismatched range")
 
 (put 'a3el-tree-adaptor-error 'error-conditions
-     '(error a3el-re-error))
-(put 'a3el-tree-adaptor-error 'error-message "Tree construction error.")
+     '(error a3el-runtime-error))
+
+(put 'a3el-rewrite-empty-stream-error 'error-conditions
+     '(error a3el-runtime-error))
+
+(put 'a3el-rewrite-cardinality-error 'error-conditions
+     '(error a3el-runtime-error))
+
+(put 'a3el-rewrite-early-exit-error 'error-conditions
+     '(error a3el-runtime-error))
+
+
+(defstruct a3el-rewrite-stream
+  "A rewrite rule stream.
+
+   WARNING: This is an abstract structure! 
+   Make instances of a3el-rewrite-token-stream or
+   a3el-rewrite-subtree-stream instead."
+
+  ;; The list of tokens or subtrees we are tracking
+  (elements '())
+
+  ;; Cursor 0..n-1
+  (cursor 0)
+
+  ;; Once a node / subtree has been used in a stream, it must be dup'd
+  ;; from then on.  Streams are reset after subrules so that the streams
+  ;; can be reused in future subrules.  So, reset must set a dirty bit.
+  ;; If dirty, then next() always returns a dup.
+  (dirty nil)
+
+  ;; The element or stream description; usually has name of the token or
+  ;; rule reference that this list tracks.  Can include rulename too, but
+  ;; the exception would track that info.
+  ;;
+  (element-description nil)
+
+  ;; The tree adaptor.
+  ;;
+  (adaptor nil)
+  )
+
+(defstruct (a3el-rewrite-token-stream (:include a3el-rewrite-stream))
+  "A rewrite rule token stream.")
+
+(defstruct (a3el-rewrite-subtree-stream (:include a3el-rewrite-stream))
+  "A rewrite rule subtree stream.")
+
+
+
+(defun a3el-rewrite-stream-reset (s)
+  "Reset the condition of this stream so that it appears we have
+   not consumed any of its elements.  Elements themselves are untouched.
+   Once we reset the stream, any future use will need duplicates.  Set
+   the dirty bit."
+  (setf (a3el-rewrite-stream-cursor s) 0)
+  (setf (a3el-rewrite-stream-dirty s) t))
+
+
+(defun a3el-rewrite-stream-add (s el)
+  "Add an element to this stream."
+  (unless (null el)
+    (setf (a3el-rewrite-stream-elements s)
+	  (nreverse 
+	   (cons el (a3el-rewrite-stream-elements s))))))
+
+
+(defun a3el-rewrite-stream-next (s)
+  "Return the next element in the stream.  If out of elements, throw
+   an exception unless size()==1.  If size is 1, then return elements[0].
+   Return a duplicate node/subtree if stream is out of elements and
+   size==1.  If we've already used the element, dup (dirty bit set)."
+  (if (a3el-rewrite-token-stream-p s) (a3el-rewrite-stream_next s)
+    (let ((n (length (a3el-rewrite-stream-elements s)))
+	  (dirty (a3el-rewrite-stream-dirty s))
+	  (cursor (a3el-rewrite-stream-cursor s)))
+      (if (or dirty (and (>= cursor n) (= n 1)))
+	  (let ((el (a3el-rewrite-stream_next s)))
+	    ;;if out of elements and size is 1, dup
+	    (a3el-rewrite-stream-dup s el))
+	(a3el-rewrite-stream_next s)))))
+
+
+(defun a3el-rewrite-stream_next (s)
+  "Do the work of getting the next element, making sure that it's
+   a tree node or subtree.  Deal with the optimization of single-
+   element list versus list of size > 1.  Throw an exception
+   if the stream is empty or we're out of elements and size>1.
+   protected so you can override in a subclass if necessary."
+  (let ((n (length (a3el-rewrite-stream-elements s)))
+	(cursor (a3el-rewrite-stream-cursor s)))
+    (if (= n 0)
+	(signal 'a3el-rewrite-empty-stream-error (a3el-rewrite-stream-element-description s)))
+    (if (>= cursor n) ;;out of elements?
+	(if (= n 1)   ;; if size is 1, it's ok; return and we'll dup
+	    (a3el-rewrite-stream-to-tree s (nth 0 (a3el-rewrite-stream-elements s)))
+	  (signal 'a3el-rewrite-cardinality-error (a3el-rewrite-stream-element-description s)))
+      (progn
+	(let ((o (a3el-rewrite-stream-to-tree 
+		  s (nth cursor (a3el-rewrite-stream-elements s)))))
+	  (incf (a3el-rewrite-stream-cursor s))
+	  o
+	  )))))
+
+
+(defun a3el-rewrite-stream-next-node (s)
+  "Treat next element as a single node even if it's a subtree.
+   This is used instead of next() when the result has to be a
+   tree root node.  Also prevents us from duplicating recently-added
+   children; e.g., ^(type ID)+ adds ID to type and then 2nd iteration
+   must dup the type node, but ID has been added.
+   
+   Referencing a rule result twice is ok; dup entire tree as
+   we can't be adding trees as root; e.g., expr expr.
+   
+   Hideous code duplication here with super.next().  Can't think of
+   a proper way to refactor.  This needs to always call dup node
+   and super.next() doesn't know which to call: dup node or dup tree."
+  (let ((n (length (a3el-rewrite-stream-elements s)))
+	(dirty (a3el-rewrite-stream-dirty s))
+	(cursor (a3el-rewrite-stream-cursor s)))
+    (if (or dirty (and (>= cursor n) (= n 1)))
+	;;if out of elements and size is 1, dup (at most a single node
+	;;since this is for making root nodes).
+	(let ((el (a3el-rewrite-stream_next s)))
+	  (funcall (a3el-tree-adaptor-dup-node
+		    (a3el-rewrite-stream-adaptor s)) el))
+      (a3el-rewrite-stream_next s))))
+
+
+(defun a3el-rewrite-stream-to-tree (s el)
+  "Ensure stream emits trees; tokens must be converted to AST nodes.
+   AST nodes can be passed through unmolested."
+  (if (a3el-rewrite-token-stream-p s) 
+      (funcall (a3el-tree-adaptor-create1 
+		(a3el-rewrite-stream-adaptor s)) el)
+    el))
+
+
+(defun a3el-rewrite-stream-dup (s el)
+  "When constructing trees, sometimes we need to dup a token or AST
+   subtree.  Dup'ing a token means just creating another AST node
+   around it.  For trees, you must call the adaptor.dupTree() unless
+   the element is for a tree root; then it must be a node dup."
+  (if (a3el-rewrite-token-stream-p s)
+      (signal 'error "dup can't be called for a token stream")
+    (funcall (a3el-tree-adaptor-dup-tree
+	      (a3el-rewrite-stream-adaptor s)) el)))
+
+
+(defun a3el-rewrite-stream-has-next (s)
+  "Is there another element to be had?"
+  (< (a3el-rewrite-stream-cursor s) 
+     (length (a3el-rewrite-stream-elements s))
+     ))
+
+
 
 
 (defstruct a3el-common-tree
   "The default tree representation."
   (token nil)
-  (is-nil t)
+  (is-nil nil)
   (children '()))
 
 
@@ -75,34 +230,34 @@
 
   (create1
    #'(lambda (token) 
-       (make-a3el-common-tree :token token :is-nil nil)))
+       (make-a3el-common-tree :token token)))
 
   (create2
    #'(lambda (token-type token) 
-       (make-a3el-common-tree :token token :is-nil nil)))
+       (make-a3el-common-tree :token token)))
 
   (create3
    #'(lambda (token-type token token-text)
-       (make-a3el-common-tree :token token :is-nil nil)))
+       (make-a3el-common-tree :token token)))
 
   (create4
    #'(lambda (token-type token-text)
-       (make-a3el-common-tree :token token :is-nil nil)))
+       (make-a3el-common-tree :token token)))
 
+  ;; Return a nil node (an empty but non-null node) that can hold
+  ;; a list of element as the children.  If you want a flat tree (a list)
+  ;; use "t=adaptor.nil(); t.addChild(x); t.addChild(y);"
   (new-nil 
-   ;; Return a nil node (an empty but non-null node) that can hold
-   ;; a list of element as the children.  If you want a flat tree (a list)
-   ;; use "t=adaptor.nil(); t.addChild(x); t.addChild(y);"
    #'(lambda () 
        (make-a3el-common-tree :is-nil t)))
 
+  ;; Add a child to the tree t.  If child is a flat tree (a list), make all
+  ;; in list children of t.  Warning: if t has no children, but child does
+  ;; and child isNil then you can decide it is ok to move children to t via
+  ;; t.children = child.children; i.e., without copying the array.  Just
+  ;; make sure that this is consistent with have the user will build
+  ;; ASTs. Do nothing if t or child is null.
   (add-child
-   ;; Add a child to the tree t.  If child is a flat tree (a list), make all
-   ;; in list children of t.  Warning: if t has no children, but child does
-   ;; and child isNil then you can decide it is ok to move children to t via
-   ;; t.children = child.children; i.e., without copying the array.  Just
-   ;; make sure that this is consistent with have the user will build
-   ;; ASTs. Do nothing if t or child is null.
    #'(lambda (p c)
        (if (and p c)
 	   (if (a3el-common-tree-is-nil c)
@@ -114,32 +269,32 @@
 			   (list c)))))))
 
 
+  ;; If oldRoot is a nil root, just copy or move the children to newRoot.
+  ;; If not a nil root, make oldRoot a child of newRoot.
+  ;; 
+  ;;    old=^(nil a b c), new=r yields ^(r a b c)
+  ;;    old=^(a b c), new=r yields ^(r ^(a b c))
+  ;; 
+  ;; If newRoot is a nil-rooted single child tree, use the single
+  ;; child as the new root node.
+  ;; 
+  ;;    old=^(nil a b c), new=^(nil r) yields ^(r a b c)
+  ;;    old=^(a b c), new=^(nil r) yields ^(r ^(a b c))
+  ;; 
+  ;; If oldRoot was null, it's ok, just return newRoot (even if isNil).
+  ;; 
+  ;;    old=null, new=r yields r
+  ;;    old=null, new=^(nil r) yields ^(nil r)
+  ;; 
+  ;; Return newRoot.  Throw an exception if newRoot is not a
+  ;; simple node or nil root with a single child node--it must be a root
+  ;; node.  If newRoot is ^(nil x) return x as newRoot.
+  ;; 
+  ;; Be advised that it's ok for newRoot to point at oldRoot's
+  ;; children; i.e., you don't have to copy the list.  We are
+  ;; constructing these nodes so we should have this control for
+  ;; efficiency.
   (become-root
-   ;; If oldRoot is a nil root, just copy or move the children to newRoot.
-   ;; If not a nil root, make oldRoot a child of newRoot.
-   ;; 
-   ;;    old=^(nil a b c), new=r yields ^(r a b c)
-   ;;    old=^(a b c), new=r yields ^(r ^(a b c))
-   ;; 
-   ;; If newRoot is a nil-rooted single child tree, use the single
-   ;; child as the new root node.
-   ;; 
-   ;;    old=^(nil a b c), new=^(nil r) yields ^(r a b c)
-   ;;    old=^(a b c), new=^(nil r) yields ^(r ^(a b c))
-   ;; 
-   ;; If oldRoot was null, it's ok, just return newRoot (even if isNil).
-   ;; 
-   ;;    old=null, new=r yields r
-   ;;    old=null, new=^(nil r) yields ^(nil r)
-   ;; 
-   ;; Return newRoot.  Throw an exception if newRoot is not a
-   ;; simple node or nil root with a single child node--it must be a root
-   ;; node.  If newRoot is ^(nil x) return x as newRoot.
-   ;; 
-   ;; Be advised that it's ok for newRoot to point at oldRoot's
-   ;; children; i.e., you don't have to copy the list.  We are
-   ;; constructing these nodes so we should have this control for
-   ;; efficiency.
    #'(lambda (new-root old-root)
        (if (null old-root) new-root
 	 (let ((children-to-add 
@@ -148,7 +303,7 @@
 		  (list old-root))))
 	   (if (a3el-common-tree-is-nil new-root)
 	       (progn
-		 (if (/= (length (a3el-common-tree-children new-root) 1))
+		 (if (/= (length (a3el-common-tree-children new-root)) 1)
 		     (signal 'a3el-tree-adaptor-error 
 			     "new-root is not a simple node of nil root with a single child node.")
 		   (setq new-root (nth 0 (a3el-common-tree-children new-root))))
@@ -159,6 +314,15 @@
 			children-to-add))))
 	   new-root
 	   ))))
+
+
+  ;; Duplicate tree recursively, using dup-node for each node
+  (dup-tree
+   #'(lambda (tree) tree))
+
+  ;;Duplicate a single tree node
+  (dup-node
+   #'(lambda (node) node))
 
         
   ;; Given the root of the subtree created for this rule, post process
