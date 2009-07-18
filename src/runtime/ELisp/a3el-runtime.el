@@ -57,30 +57,134 @@
      '(error a3el-re-error))
 (put 'a3el-mismatched-range 'error-message "Mismatched range")
 
+(put 'a3el-tree-adaptor-error 'error-conditions
+     '(error a3el-re-error))
+(put 'a3el-tree-adaptor-error 'error-message "Tree construction error.")
 
 
+(defstruct a3el-common-tree
+  "The default tree representation."
+  (token nil)
+  (is-nil t)
+  (children '()))
 
 
 (defstruct a3el-tree-adaptor
-  "A rule's return value."
-  (new-nil 
-   #'(lambda () nil))
+  "A simple tree adaptor. Creates trees of common-trees.
+   e.g. (aToken (child1 child2 child3))."
 
-  (create 
-   #'(lambda (token) nil))
+  (create1
+   #'(lambda (token) 
+       (make-a3el-common-tree :token token :is-nil nil)))
+
+  (create2
+   #'(lambda (token-type token) 
+       (make-a3el-common-tree :token token :is-nil nil)))
+
+  (create3
+   #'(lambda (token-type token token-text)
+       (make-a3el-common-tree :token token :is-nil nil)))
+
+  (create4
+   #'(lambda (token-type token-text)
+       (make-a3el-common-tree :token token :is-nil nil)))
+
+  (new-nil 
+   ;; Return a nil node (an empty but non-null node) that can hold
+   ;; a list of element as the children.  If you want a flat tree (a list)
+   ;; use "t=adaptor.nil(); t.addChild(x); t.addChild(y);"
+   #'(lambda () 
+       (make-a3el-common-tree :is-nil t)))
 
   (add-child
-   #'(lambda (parent child) ))
+   ;; Add a child to the tree t.  If child is a flat tree (a list), make all
+   ;; in list children of t.  Warning: if t has no children, but child does
+   ;; and child isNil then you can decide it is ok to move children to t via
+   ;; t.children = child.children; i.e., without copying the array.  Just
+   ;; make sure that this is consistent with have the user will build
+   ;; ASTs. Do nothing if t or child is null.
+   #'(lambda (p c)
+       (if (and p c)
+	   (if (a3el-common-tree-is-nil c)
+	       (setf (a3el-common-tree-children p)
+		     (append (a3el-common-tree-children p)
+			     (a3el-common-tree-children c)))
+	     (setf (a3el-common-tree-children p)
+		   (append (a3el-common-tree-children p)
+			   (list c)))))))
+
 
   (become-root
-   #'(lambda (new-root root) ))
+   ;; If oldRoot is a nil root, just copy or move the children to newRoot.
+   ;; If not a nil root, make oldRoot a child of newRoot.
+   ;; 
+   ;;    old=^(nil a b c), new=r yields ^(r a b c)
+   ;;    old=^(a b c), new=r yields ^(r ^(a b c))
+   ;; 
+   ;; If newRoot is a nil-rooted single child tree, use the single
+   ;; child as the new root node.
+   ;; 
+   ;;    old=^(nil a b c), new=^(nil r) yields ^(r a b c)
+   ;;    old=^(a b c), new=^(nil r) yields ^(r ^(a b c))
+   ;; 
+   ;; If oldRoot was null, it's ok, just return newRoot (even if isNil).
+   ;; 
+   ;;    old=null, new=r yields r
+   ;;    old=null, new=^(nil r) yields ^(nil r)
+   ;; 
+   ;; Return newRoot.  Throw an exception if newRoot is not a
+   ;; simple node or nil root with a single child node--it must be a root
+   ;; node.  If newRoot is ^(nil x) return x as newRoot.
+   ;; 
+   ;; Be advised that it's ok for newRoot to point at oldRoot's
+   ;; children; i.e., you don't have to copy the list.  We are
+   ;; constructing these nodes so we should have this control for
+   ;; efficiency.
+   #'(lambda (new-root old-root)
+       (if (null old-root) new-root
+	 (let ((children-to-add 
+		(if (a3el-common-tree-is-nil old-root)
+		    (a3el-common-tree-children old-root)
+		  (list old-root))))
+	   (if (a3el-common-tree-is-nil new-root)
+	       (progn
+		 (if (/= (length (a3el-common-tree-children new-root) 1))
+		     (signal 'a3el-tree-adaptor-error 
+			     "new-root is not a simple node of nil root with a single child node.")
+		   (setq new-root (nth 0 (a3el-common-tree-children new-root))))
 
+		 (setf (a3el-common-tree-children new-root)
+		       (append
+			(a3el-common-tree-children new-root)
+			children-to-add))))
+	   new-root
+	   ))))
+
+        
+  ;; Given the root of the subtree created for this rule, post process
+  ;; it to do any simplifications or whatever you want.  A required
+  ;; behavior is to convert ^(nil singleSubtree) to singleSubtree
+  ;; as the setting of start/stop indexes relies on a single non-nil root
+  ;; for non-flat trees.
+  ;; 
+  ;; Flat trees such as for lists like "idlist : ID+ ;" are left alone
+  ;; unless there is only one ID.  For a list, the start/stop indexes
+  ;; are set in the nil node.
+  ;; 
+  ;; This method is executed after all rule tree construction and right
+  ;; before setTokenBoundaries().
   (rule-post-processing
    #'(lambda (tree) tree))
 
+  ;; Where are the bounds in the input token stream for this node and
+  ;; all children?  Each rule that creates AST nodes will call this
+  ;; method right before returning.  Flat trees (i.e., lists) will
+  ;; still usually have a nil root node just to hold the children list.
+  ;; That node would contain the start/stop indexes then.
   (set-token-boundaries
-   #'(lambda () ))
+   #'(lambda (token start-token stop-token) ))
   )
+
 
 
 (defstruct a3el-retval

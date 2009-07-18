@@ -126,7 +126,10 @@ genericParser(grammar, name, scopes, tokens, tokenNames, rules, numRules,
 
     	(adaptor (a3el-parser-tree-adaptor current-parser))
     	(adaptor-new-nil (a3el-tree-adaptor-new-nil adaptor))
-    	(adaptor-create (a3el-tree-adaptor-create adaptor))
+    	(adaptor-create1 (a3el-tree-adaptor-create1 adaptor))
+    	(adaptor-create2 (a3el-tree-adaptor-create2 adaptor))
+    	(adaptor-create3 (a3el-tree-adaptor-create3 adaptor))
+    	(adaptor-create4 (a3el-tree-adaptor-create4 adaptor))
     	(adaptor-add-child (a3el-tree-adaptor-add-child adaptor))
     	(adaptor-become-root (a3el-tree-adaptor-become-root adaptor))
     	(adaptor-rule-post-processing (a3el-tree-adaptor-rule-post-processing adaptor))
