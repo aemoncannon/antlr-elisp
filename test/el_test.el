@@ -23,6 +23,13 @@
                                     " but was: " 
                                     (format "%s" first-param))))))
 
+(defmacro assert-false (name first)
+  `(let ((first-param ,first))
+     (unless (not first-param)
+       (signal 'test-failed (concat ,name " - expected false," 
+                                    " but was: " 
+                                    (format "%s" first-param))))))
+
 (defmacro assert-error (name error code)
   `(condition-case err
        (progn 

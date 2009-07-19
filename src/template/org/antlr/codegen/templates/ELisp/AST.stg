@@ -106,7 +106,7 @@ tokenRefRuleRoot(token,label,elementIndex) ::= <<
 <super.tokenRef(...)>
 <if(backtracking)>(if (= (a3el-parser-context-backtracking context) 0)<endif>
 (progn
-(setq <label>_tree = (funcall adaptor-create1 <label>))
+(setq <label>_tree (funcall adaptor-create1 <label>))
 (setq root_0 (funcall adaptor-become-root <label>_tree root_0)))
 <if(backtracking)>)<endif>
 >>

@@ -51,6 +51,7 @@
 (load "calc_lexer_test.el")
 (load "full_calc_test.el")
 (load "bitset_test.el")
+(load "common_tree_test.el")
 (load "error_recovery_test.el")
 (load "closures_test.el")
 (load "synpred_test.el")

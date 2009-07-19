@@ -302,52 +302,51 @@
 		    (a3el-common-tree-children old-root)
 		  (list old-root))))
 	   (if (a3el-common-tree-is-nil new-root)
-	       (progn
-		 (if (/= (length (a3el-common-tree-children new-root)) 1)
-		     (signal 'a3el-tree-adaptor-error 
-			     "new-root is not a simple node of nil root with a single child node.")
-		   (setq new-root (nth 0 (a3el-common-tree-children new-root))))
+	       (if (/= (length (a3el-common-tree-children new-root)) 1)
+		   (signal 'a3el-tree-adaptor-error 
+			   "new-root is not a simple node of nil root with a single child node.")
+		 (setq new-root (nth 0 (a3el-common-tree-children new-root)))))
 
-		 (setf (a3el-common-tree-children new-root)
-		       (append
-			(a3el-common-tree-children new-root)
-			children-to-add))))
-	   new-root
-	   ))))
+	   (setf (a3el-common-tree-children new-root)
+		 (append
+		  (a3el-common-tree-children new-root)
+		  children-to-add))))
+       new-root
+       ))
 
 
-  ;; Duplicate tree recursively, using dup-node for each node
-  (dup-tree
-   #'(lambda (tree) tree))
+;; Duplicate tree recursively, using dup-node for each node
+(dup-tree
+#'(lambda (tree) tree))
 
-  ;;Duplicate a single tree node
-  (dup-node
-   #'(lambda (node) node))
+;;Duplicate a single tree node
+(dup-node
+#'(lambda (node) node))
 
         
-  ;; Given the root of the subtree created for this rule, post process
-  ;; it to do any simplifications or whatever you want.  A required
-  ;; behavior is to convert ^(nil singleSubtree) to singleSubtree
-  ;; as the setting of start/stop indexes relies on a single non-nil root
-  ;; for non-flat trees.
-  ;; 
-  ;; Flat trees such as for lists like "idlist : ID+ ;" are left alone
-  ;; unless there is only one ID.  For a list, the start/stop indexes
-  ;; are set in the nil node.
-  ;; 
-  ;; This method is executed after all rule tree construction and right
-  ;; before setTokenBoundaries().
-  (rule-post-processing
-   #'(lambda (tree) tree))
+;; Given the root of the subtree created for this rule, post process
+;; it to do any simplifications or whatever you want.  A required
+;; behavior is to convert ^(nil singleSubtree) to singleSubtree
+;; as the setting of start/stop indexes relies on a single non-nil root
+;; for non-flat trees.
+;; 
+;; Flat trees such as for lists like "idlist : ID+ ;" are left alone
+;; unless there is only one ID.  For a list, the start/stop indexes
+;; are set in the nil node.
+;; 
+;; This method is executed after all rule tree construction and right
+;; before setTokenBoundaries().
+(rule-post-processing
+#'(lambda (tree) tree))
 
-  ;; Where are the bounds in the input token stream for this node and
-  ;; all children?  Each rule that creates AST nodes will call this
-  ;; method right before returning.  Flat trees (i.e., lists) will
-  ;; still usually have a nil root node just to hold the children list.
-  ;; That node would contain the start/stop indexes then.
-  (set-token-boundaries
-   #'(lambda (token start-token stop-token) ))
-  )
+;; Where are the bounds in the input token stream for this node and
+;; all children?  Each rule that creates AST nodes will call this
+;; method right before returning.  Flat trees (i.e., lists) will
+;; still usually have a nil root node just to hold the children list.
+;; That node would contain the start/stop indexes then.
+(set-token-boundaries
+#'(lambda (token start-token stop-token) ))
+)
 
 
 
@@ -391,18 +390,18 @@
 
 (defmacro a3el-deftoken (name value)
   `(puthash ',name ,value 
-	    (if (boundp 'current-lexer)
-		(a3el-lexer-tokens current-lexer)
-	      (a3el-parser-tokens current-parser))))
+  (if (boundp 'current-lexer)
+      (a3el-lexer-tokens current-lexer)
+    (a3el-parser-tokens current-parser))))
 
 
 (defmacro a3el-defrule (name params &rest body)
   `(puthash ',name (lambda (context ,@params)
 		     (with-current-buffer current-buffer
 		       ,@body))
-	    (if (boundp 'current-lexer) 
-		(a3el-lexer-rules current-lexer)
-	      (a3el-parser-rules current-parser))))
+  (if (boundp 'current-lexer) 
+      (a3el-lexer-rules current-lexer)
+    (a3el-parser-rules current-parser))))
 
 
 
@@ -430,16 +429,16 @@
 (defmacro a3el-defDFAstruct (name &rest defaults)
   "Define a custom DFA creation function"
   `(progn 
-     (fset ',name
-	   #'(lambda (reco)
-	       (make-a3el-DFA
-		:recognizer reco
-		,@defaults
-		)))
-     (unless (fboundp (intern (concat "make-a3el-DFAstruct-" (format "%s" ',name))))
-       (fset (intern (concat "make-a3el-DFAstruct-" (format "%s" ',name)))
-	     #'(lambda ()
-		 (funcall ',name nil))))))
+  (fset ',name
+	#'(lambda (reco)
+	    (make-a3el-DFA
+	     :recognizer reco
+	     ,@defaults
+	     )))
+  (unless (fboundp (intern (concat "make-a3el-DFAstruct-" (format "%s" ',name))))
+    (fset (intern (concat "make-a3el-DFAstruct-" (format "%s" ',name)))
+	  #'(lambda ()
+	      (funcall ',name nil))))))
 
 
 
@@ -520,14 +519,14 @@
 
 (defmacro a3el-deflexer (name)
   `(puthash ',name 
-	    (make-a3el-lexer :name ',name) 
-	    *a3el-runtime-lexers*))
+  (make-a3el-lexer :name ',name) 
+  *a3el-runtime-lexers*))
 
 (defmacro a3el-lexer-input-LA (n)
   `(let ((at (+ (point) (- ,n 1))))
-     (if (= at (point-max))
-	 -1
-       (char-after at))))
+  (if (= at (point-max))
+      -1
+    (char-after at))))
   
 (defmacro a3el-lexer-input-consume ()
   `(goto-char (+ (point) 1)))
@@ -540,47 +539,47 @@
 
 (defun a3el-lexer-token-text (token)
   (cond
-   ((not (null (a3el-common-token-text token))) 
-    a3el-common-token-text token)
-   ((not (null (a3el-common-token-input token)))
-    (let ((text (with-current-buffer (a3el-common-token-input token)
-		  (buffer-substring (a3el-common-token-start token) 
-				    (a3el-common-token-stop token)))))
-      (setf (a3el-common-token-text token) text)
-      text))
-   (t nil)))
+  ((not (null (a3el-common-token-text token))) 
+   a3el-common-token-text token)
+  ((not (null (a3el-common-token-input token)))
+   (let ((text (with-current-buffer (a3el-common-token-input token)
+		 (buffer-substring (a3el-common-token-start token) 
+				   (a3el-common-token-stop token)))))
+     (setf (a3el-common-token-text token) text)
+     text))
+  (t nil)))
 
 
 (defmacro a3el-lexer-input-mark ()
   `(progn
-     (if (null (a3el-lexer-context-markers context))
-	 ;; depth 0 means no backtracking, leave blank
-	 (setf (a3el-lexer-context-markers context) (list nil)))
-     (incf (a3el-lexer-context-mark-depth context))
-     (let ((state nil))
-       (if (>= (a3el-lexer-context-mark-depth context)
-	       (length (a3el-lexer-context-markers context)))
-	   (progn
-	     (setq state (make-a3el-char-stream-state))
-	     (setf (a3el-lexer-context-markers context) 
-		   (append (a3el-lexer-context-markers context) (list state))))
-	 (progn
-	   (setq state (nth (a3el-lexer-context-mark-depth context)
-			    (a3el-lexer-context-markers context)))))
+  (if (null (a3el-lexer-context-markers context))
+      ;; depth 0 means no backtracking, leave blank
+      (setf (a3el-lexer-context-markers context) (list nil)))
+  (incf (a3el-lexer-context-mark-depth context))
+  (let ((state nil))
+    (if (>= (a3el-lexer-context-mark-depth context)
+	    (length (a3el-lexer-context-markers context)))
+	(progn
+	  (setq state (make-a3el-char-stream-state))
+	  (setf (a3el-lexer-context-markers context) 
+		(append (a3el-lexer-context-markers context) (list state))))
+      (progn
+	(setq state (nth (a3el-lexer-context-mark-depth context)
+			 (a3el-lexer-context-markers context)))))
 
-       (setf (a3el-char-stream-state-pos state) 
-	     (a3el-lexer-context-pos))
+    (setf (a3el-char-stream-state-pos state) 
+	  (a3el-lexer-context-pos))
 
-       (setf (a3el-char-stream-state-line state)
-	     (a3el-lexer-context-line context))
+    (setf (a3el-char-stream-state-line state)
+	  (a3el-lexer-context-line context))
 
-       (setf (a3el-char-stream-state-char-position-in-line state) 
-	     (a3el-lexer-context-char-position-in-line context))
+    (setf (a3el-char-stream-state-char-position-in-line state) 
+	  (a3el-lexer-context-char-position-in-line context))
 
-       (setf (a3el-lexer-context-last-marker context) 
-	     (a3el-lexer-context-mark-depth context))
+    (setf (a3el-lexer-context-last-marker context) 
+	  (a3el-lexer-context-mark-depth context))
 
-       (a3el-lexer-context-mark-depth context))))
+    (a3el-lexer-context-mark-depth context))))
 
 
 
@@ -589,14 +588,14 @@
 
      ;; restore stream state
 
-     (a3el-lexer-input-seek (a3el-char-stream-state-pos state))
-     (setf (a3el-lexer-context-line context)
-	   (a3el-char-stream-state-line state))
+  (a3el-lexer-input-seek (a3el-char-stream-state-pos state))
+  (setf (a3el-lexer-context-line context)
+	(a3el-char-stream-state-line state))
 
-     (setf (a3el-lexer-context-char-position-in-line context)
-	   (a3el-char-stream-state-char-position-in-line state))
+  (setf (a3el-lexer-context-char-position-in-line context)
+	(a3el-char-stream-state-char-position-in-line state))
 
-     (a3el-lexer-input-release ,m)))
+  (a3el-lexer-input-release ,m)))
 
 
 (defmacro a3el-lexer-input-rewind ()
@@ -606,20 +605,20 @@
 (defmacro a3el-lexer-input-release (m)
   `(progn
      ;;unwind any other markers made after m and release m
-     (setf (a3el-lexer-context-mark-depth context) ,m)
-     ;;release this marker
-     (decf (a3el-lexer-context-mark-depth context))
-     ))
+  (setf (a3el-lexer-context-mark-depth context) ,m)
+  ;;release this marker
+  (decf (a3el-lexer-context-mark-depth context))
+  ))
 
 
 (defmacro a3el-lexer-input-seek (index)
   "consume() ahead until p==index; can't just set p=index as we must
    update line and charPositionInLine."
   `(if (<= ,index (point))
-       (goto-char ,index) ;; just jump; don't update stream state (line, ...)
-     ;; seek forward, consume until p hits index
-     (while (< (point) ,index) 
-       (a3el-lexer-input-consume))))
+  (goto-char ,index) ;; just jump; don't update stream state (line, ...)
+  ;; seek forward, consume until p hits index
+  (while (< (point) ,index) 
+    (a3el-lexer-input-consume))))
 
 (defun a3el-lexer-set-type (type)
   (setf (a3el-lexer-context-type context) type))
@@ -630,7 +629,7 @@
 (defmacro a3el-lexer-call-rule (name)
   `(progn 
      ;;(message (concat "calling rule " (format "%s" ',name))) 
-     (funcall (gethash ',name (a3el-lexer-rules (a3el-lexer-context-lexer context))) context)))
+  (funcall (gethash ',name (a3el-lexer-rules (a3el-lexer-context-lexer context))) context)))
 
 (defmacro a3el-lexer-token-id (name)
   `(gethash ',name (a3el-lexer-tokens (a3el-lexer-context-lexer context))))
@@ -638,47 +637,47 @@
 
 (defmacro a3el-lexer-match-range (a b)
   `(let ((la (a3el-lexer-input-LA 1)))
-     (when (or (< la ,a) (> la ,b))
-       (signal 'a3el-mismatched-range (list ,a ,b)))
-     (a3el-lexer-input-consume)
-     (setf (a3el-lexer-context-failed context) nil)))
+  (when (or (< la ,a) (> la ,b))
+    (signal 'a3el-mismatched-range (list ,a ,b)))
+  (a3el-lexer-input-consume)
+  (setf (a3el-lexer-context-failed context) nil)))
 
 (defmacro a3el-lexer-match (s)
   (cond
-   ((numberp s) 
-    `(if (= (a3el-lexer-input-LA 1) ,s)
-	 (goto-char (+ (point) 1))
-       (signal 'a3el-mismatched-token (list ,(char-to-string s) context))))
-   ((stringp s) 
-    `(let ((i 0)
-	   (str ,s))
-       (while (< i (length str))
-	 (unless (= (a3el-lexer-input-LA 1) (elt str i))
-	   (signal 'a3el-mismatched-token (list 
-					   (point) 
-					   (char-to-string (a3el-lexer-input-LA 1)) 
-					   (a3el-lexer-input-LA 1) 
-					   (char-to-string (elt str i)) 
-					   (elt str i) str context)))
-	 (incf i)
-	 (a3el-lexer-input-consume)
-	 (setf (a3el-lexer-context-failed context) nil))))
-   (t (signal 'error "Implement t case"))))
+  ((numberp s) 
+   `(if (= (a3el-lexer-input-LA 1) ,s)
+	(goto-char (+ (point) 1))
+      (signal 'a3el-mismatched-token (list ,(char-to-string s) context))))
+  ((stringp s) 
+   `(let ((i 0)
+	  (str ,s))
+      (while (< i (length str))
+	(unless (= (a3el-lexer-input-LA 1) (elt str i))
+	  (signal 'a3el-mismatched-token (list 
+					  (point) 
+					  (char-to-string (a3el-lexer-input-LA 1)) 
+					  (a3el-lexer-input-LA 1) 
+					  (char-to-string (elt str i)) 
+					  (elt str i) str context)))
+	(incf i)
+	(a3el-lexer-input-consume)
+	(setf (a3el-lexer-context-failed context) nil))))
+  (t (signal 'error "Implement t case"))))
 
 (defmacro a3el-with-lexer (name &rest body)
   `(progn 
-     (let ((current-lexer (gethash ',name *a3el-runtime-lexers*)))
-       ,@body)))
+  (let ((current-lexer (gethash ',name *a3el-runtime-lexers*)))
+    ,@body)))
 
 (defun a3el-lex-string (name str method)
   (let ((buffer (generate-new-buffer (generate-new-buffer-name "*antlr string lexing*"))))
-    (save-excursion
-      (with-current-buffer buffer
-	(insert str)
-	(goto-char (point-min))
-	(a3el-lex-buffer name method buffer 0 (buffer-size buffer))
-	(set-buffer-modified-p nil)
-	(kill-buffer buffer)))))
+  (save-excursion
+    (with-current-buffer buffer
+      (insert str)
+      (goto-char (point-min))
+      (a3el-lex-buffer name method buffer 0 (buffer-size buffer))
+      (set-buffer-modified-p nil)
+      (kill-buffer buffer)))))
 
 (defun a3el-lex-emit (token)
   (setf (a3el-lexer-context-token context) token))
@@ -693,8 +692,8 @@
 		:line (a3el-lexer-context-token-start-line context)
 		:text (a3el-lexer-context-text context)
 		:char-position-in-line (a3el-lexer-context-token-start-char-position-in-line context))))
-    (a3el-lex-emit token)
-    token))
+  (a3el-lex-emit token)
+  token))
 
 (defun a3el-lexer-for-buffer (lexer-name buffer start end)
   (let* ((current-lexer (gethash lexer-name *a3el-runtime-lexers*))
@@ -703,67 +702,67 @@
 		   :input buffer
 		   :input-start start
 		   :input-end end)))
-    (save-excursion
-      (with-current-buffer (a3el-lexer-context-input context)
-	(goto-char (a3el-lexer-context-input-start context))
+  (save-excursion
+    (with-current-buffer (a3el-lexer-context-input context)
+      (goto-char (a3el-lexer-context-input-start context))
+      (setf (a3el-lexer-context-token context) nil
+	    (a3el-lexer-context-channel context) *a3el-token-default-channel*
+	    (a3el-lexer-context-token-start-char-index context) (point)
+	    (a3el-lexer-context-token-start-char-position-in-line context) (current-column)
+	    (a3el-lexer-context-token-start-line context) (line-number-at-pos)
+	    (a3el-lexer-context-text context) nil)))
+  context))
+
+(defun a3el-lex-buffer (lexer-name method buffer start end)
+  (let ((context (a3el-lexer-for-buffer lexer-name buffer start end)))
+  (a3el-lex-with-lexer context method)))
+
+(defun a3el-lex-with-lexer (context method)
+  (save-excursion
+  (with-current-buffer (a3el-lexer-context-input context)
+    (catch 'at-end
+      (while t
 	(setf (a3el-lexer-context-token context) nil
 	      (a3el-lexer-context-channel context) *a3el-token-default-channel*
 	      (a3el-lexer-context-token-start-char-index context) (point)
 	      (a3el-lexer-context-token-start-char-position-in-line context) (current-column)
 	      (a3el-lexer-context-token-start-line context) (line-number-at-pos)
-	      (a3el-lexer-context-text context) nil)))
-    context))
-
-(defun a3el-lex-buffer (lexer-name method buffer start end)
-  (let ((context (a3el-lexer-for-buffer lexer-name buffer start end)))
-    (a3el-lex-with-lexer context method)))
-
-(defun a3el-lex-with-lexer (context method)
-  (save-excursion
-    (with-current-buffer (a3el-lexer-context-input context)
-      (catch 'at-end
-	(while t
-	  (setf (a3el-lexer-context-token context) nil
-		(a3el-lexer-context-channel context) *a3el-token-default-channel*
-		(a3el-lexer-context-token-start-char-index context) (point)
-		(a3el-lexer-context-token-start-char-position-in-line context) (current-column)
-		(a3el-lexer-context-token-start-line context) (line-number-at-pos)
-		(a3el-lexer-context-text context) nil)
-	  (when (= (point) (point-max))
-	    (funcall method *a3el-token-eof-token*)
-	    (throw 'at-end nil))
-	  (condition-case re
-	      (progn
-		(funcall (a3el-lexer-entry-func (a3el-lexer-context-lexer context)) context 'Tokens)
-		(when (null (a3el-lexer-context-token context))
-		  (a3el-lex-emit-token))
-		(unless (eq (a3el-lexer-context-token context) *a3el-token-skip-token*)
-		  (funcall method (a3el-lexer-context-token context))))
-	    (a3el-re-error
-	     (a3el-lexer-report-error re)
-	     (a3el-lexer-recover re)
-	     )))))))
+	      (a3el-lexer-context-text context) nil)
+	(when (= (point) (point-max))
+	  (funcall method *a3el-token-eof-token*)
+	  (throw 'at-end nil))
+	(condition-case re
+	    (progn
+	      (funcall (a3el-lexer-entry-func (a3el-lexer-context-lexer context)) context 'Tokens)
+	      (when (null (a3el-lexer-context-token context))
+		(a3el-lex-emit-token))
+	      (unless (eq (a3el-lexer-context-token context) *a3el-token-skip-token*)
+		(funcall method (a3el-lexer-context-token context))))
+	  (a3el-re-error
+	   (a3el-lexer-report-error re)
+	   (a3el-lexer-recover re)
+	   )))))))
 
 (defmacro a3el-lexer-call-synpred (synpred-rule-name)
   `(progn
-     (incf (a3el-lexer-context-backtracking context))
-     (let ((start (a3el-lexer-input-mark))
-	   (success nil))
-       (condition-case er
-	   (a3el-lexer-call-rule ,synpred-rule-name) ;; can never throw exception
-	 (a3el-re-error
-	  (throw er "Illegal state! synpreds cannot throw exceptions.")))
-       (setq success (not (a3el-lexer-context-failed context)))
-       (a3el-lexer-input-rewind-to start)
-       (decf (a3el-lexer-context-backtracking context))
-       (setf (a3el-lexer-context-failed context) nil)
-       success)))
+  (incf (a3el-lexer-context-backtracking context))
+  (let ((start (a3el-lexer-input-mark))
+	(success nil))
+    (condition-case er
+	(a3el-lexer-call-rule ,synpred-rule-name) ;; can never throw exception
+      (a3el-re-error
+       (throw er "Illegal state! synpreds cannot throw exceptions.")))
+    (setq success (not (a3el-lexer-context-failed context)))
+    (a3el-lexer-input-rewind-to start)
+    (decf (a3el-lexer-context-backtracking context))
+    (setf (a3el-lexer-context-failed context) nil)
+    success)))
 
 
 (defun a3el-lexer-report-error (re)
   (if (boundp '*a3el-swallowed-recogition-errors*)
-      (push re *a3el-swallowed-recogition-errors*)
-    (a3el-display-recognition-error re)))
+  (push re *a3el-swallowed-recogition-errors*)
+  (a3el-display-recognition-error re)))
 
 (defun a3el-lexer-recover (re)
   "Lexers can normally match any char in it's vocabulary after matching
@@ -776,41 +775,41 @@
 ;; Must be defined AFTER required macros
 (defun a3el-predict-DFA-with (dfa)
   (let ((mark (a3el-lexer-input-mark)))
-    (unwind-protect
-	(catch 'return
-	  (let ((s 0))
-	    (while t
-	      (catch 'continue
-		(let ((special-state (aref (a3el-DFA-special dfa) s)))
-		  (when (>= special-state 0)
-		    (setq s (funcall (a3el-DFA-special-state-transition dfa) special-state))
+  (unwind-protect
+      (catch 'return
+	(let ((s 0))
+	  (while t
+	    (catch 'continue
+	      (let ((special-state (aref (a3el-DFA-special dfa) s)))
+		(when (>= special-state 0)
+		  (setq s (funcall (a3el-DFA-special-state-transition dfa) special-state))
+		  (a3el-lexer-input-consume)
+		  (throw 'continue nil))
+		(when (>= (aref (a3el-DFA-accept dfa) s) 1)
+		  (throw 'return (aref (a3el-DFA-accept dfa) s)))
+		(let ((c (a3el-lexer-input-LA 1)))
+		  (when (and (>= c (aref (a3el-DFA-min dfa) s)) (<= c (aref (a3el-DFA-max dfa) s)))
+		    (let ((snext (aref (aref (a3el-DFA-transition dfa) s) (- c (aref (a3el-DFA-min dfa) s)) )))
+		      (when (< snext 0)
+			(when (>= (aref (a3el-DFA-eot dfa) s) 0)
+			  (setq s (aref (a3el-DFA-eot dfa) s))
+			  (a3el-lexer-input-consume)
+			  (throw 'continue nil))
+			(signal 'a3el-no-viable-alt (list s))
+			(throw 'return 0))
+		      (setq s snext)
+		      (a3el-lexer-input-consume)
+		      (throw 'continue nil)))
+		  (when (>= (aref (a3el-DFA-eot dfa) s) 0)
+		    (setq s (aref (a3el-DFA-eot dfa) s))
 		    (a3el-lexer-input-consume)
 		    (throw 'continue nil))
-		  (when (>= (aref (a3el-DFA-accept dfa) s) 1)
-		    (throw 'return (aref (a3el-DFA-accept dfa) s)))
-		  (let ((c (a3el-lexer-input-LA 1)))
-		    (when (and (>= c (aref (a3el-DFA-min dfa) s)) (<= c (aref (a3el-DFA-max dfa) s)))
-		      (let ((snext (aref (aref (a3el-DFA-transition dfa) s) (- c (aref (a3el-DFA-min dfa) s)) )))
-			(when (< snext 0)
-			  (when (>= (aref (a3el-DFA-eot dfa) s) 0)
-			    (setq s (aref (a3el-DFA-eot dfa) s))
-			    (a3el-lexer-input-consume)
-			    (throw 'continue nil))
-			  (signal 'a3el-no-viable-alt (list s))
-			  (throw 'return 0))
-			(setq s snext)
-			(a3el-lexer-input-consume)
-			(throw 'continue nil)))
-		    (when (>= (aref (a3el-DFA-eot dfa) s) 0)
-		      (setq s (aref (a3el-DFA-eot dfa) s))
-		      (a3el-lexer-input-consume)
-		      (throw 'continue nil))
-		    (when (and (eq c *a3el-token-eof-token*) (>= (aref (a3el-DFA-eof dfa) s) 0))
-		      (throw 'return (aref (a3el-DFA-accept dfa) (aref (a3el-DFA-eof dfa) s))))
-		    (signal 'a3el-no-viable-alt (list s))
-		    (throw 'return 0)))))))
-      (a3el-lexer-input-rewind-to mark))
-    ))
+		  (when (and (eq c *a3el-token-eof-token*) (>= (aref (a3el-DFA-eof dfa) s) 0))
+		    (throw 'return (aref (a3el-DFA-accept dfa) (aref (a3el-DFA-eof dfa) s))))
+		  (signal 'a3el-no-viable-alt (list s))
+		  (throw 'return 0)))))))
+    (a3el-lexer-input-rewind-to mark))
+  ))
 
 
 
@@ -824,43 +823,43 @@
 
 (defun a3el-bitset-member (set el)
   (if (< el 0) nil
-    (let ((n (a3el-bitset-word-number el)))
-      (if (>= n (a3el-bitset-word-len set)) nil
-	(/= (logand (a3el-bitset-word-at set n) (a3el-bitset-bitmask el)) 0)))))
+  (let ((n (a3el-bitset-word-number el)))
+    (if (>= n (a3el-bitset-word-len set)) nil
+      (/= (logand (a3el-bitset-word-at set n) (a3el-bitset-bitmask el)) 0)))))
 
 (defun a3el-bitset-or-in-place (set a)
   (unless (null a)
 
     ;;If this is smaller than a, grow this first
-    (if (> (a3el-bitset-word-len a) (a3el-bitset-word-len set))
-	(a3el-bitset-set-size set (a3el-bitset-word-len a)))
+  (if (> (a3el-bitset-word-len a) (a3el-bitset-word-len set))
+      (a3el-bitset-set-size set (a3el-bitset-word-len a)))
 
-    (let ((m (min (a3el-bitset-word-len set) 
-		  (a3el-bitset-word-len a)))
-	  (i -1))
+  (let ((m (min (a3el-bitset-word-len set) 
+		(a3el-bitset-word-len a)))
+	(i -1))
 
-      (setf i (- m 1))
-      (while (>= i 0)
-	(aset (a3el-bitset-bits set) i
-	      (logior (a3el-bitset-word-at set i) 
-		      (a3el-bitset-word-at a i)))
-	(decf i))
-      )))
+    (setf i (- m 1))
+    (while (>= i 0)
+      (aset (a3el-bitset-bits set) i
+	    (logior (a3el-bitset-word-at set i) 
+		    (a3el-bitset-word-at a i)))
+      (decf i))
+    )))
 
 (defun a3el-bitset-add (set el)
   (let ((n (a3el-bitset-word-number el)))
-    (if (>= n (a3el-bitset-word-len set))
-	(a3el-bitset-grow-to-include set el))
-    (aset (a3el-bitset-bits set) n
-	  (logior (a3el-bitset-word-at set n) 
-		  (a3el-bitset-bitmask el)))
-    ))
+  (if (>= n (a3el-bitset-word-len set))
+      (a3el-bitset-grow-to-include set el))
+  (aset (a3el-bitset-bits set) n
+	(logior (a3el-bitset-word-at set n) 
+		(a3el-bitset-bitmask el)))
+  ))
 
 (defun a3el-bitset-remove (set el)
   (let ((n (a3el-bitset-word-number el)))
-    (if (< n (a3el-bitset-word-len set))
-	(aset (a3el-bitset-bits set) n 
-	      (logand (a3el-bitset-word-at set n) (lognot (a3el-bitset-bitmask el)))))))
+  (if (< n (a3el-bitset-word-len set))
+      (aset (a3el-bitset-bits set) n 
+	    (logand (a3el-bitset-word-at set n) (lognot (a3el-bitset-bitmask el)))))))
 
 (defun a3el-bitset-bitmask (el)
   (lsh 1 (logand el *a3el-bitset-mod-mask*)))
@@ -880,7 +879,7 @@
   (let* ((n (max nwords (a3el-bitset-word-len set)))
 	 (growth (- n (a3el-bitset-word-len set)))
 	 (newbits (vconcat (a3el-bitset-bits set) (make-vector growth 0))))
-    (setf (a3el-bitset-bits set) newbits)))
+  (setf (a3el-bitset-bits set) newbits)))
 
 (defun a3el-bitset-grow-to-include (set bit)
   "Grows the set to a larger number of bits.
@@ -889,7 +888,7 @@
 			(a3el-bitset-num-words-to-hold bit)))
 	 (growth (- new-size (a3el-bitset-word-len set)))
 	 (newbits (vconcat (a3el-bitset-bits set) (make-vector growth 0))))
-    (setf (a3el-bitset-bits set) newbits)))
+  (setf (a3el-bitset-bits set) newbits)))
 
 (defun a3el-bitset-num-words-to-hold (el)
   (+ (/ el *a3el-bitset-word-size*) 1))
@@ -929,8 +928,8 @@
 
 (defmacro a3el-with-parser (name &rest body)
   `(progn 
-     (let ((current-parser (gethash ',name *a3el-runtime-parsers*)))
-       ,@body)))
+  (let ((current-parser (gethash ',name *a3el-runtime-parsers*)))
+    ,@body)))
 
 (defun a3el-parser-init-token-names (&rest names)
   (setf (a3el-parser-token-names current-parser) names))
@@ -939,19 +938,19 @@
 
 (defmacro a3el-parser-bitset (name bitsets)
   `(puthash ',name 
-	    (make-a3el-bitset :bits ,bitsets)
-	    (a3el-parser-bitsets current-parser)))
+  (make-a3el-bitset :bits ,bitsets)
+  (a3el-parser-bitsets current-parser)))
 
 (defmacro a3el-defparser (name)
   `(puthash ',name 
-	    (make-a3el-parser :name ',name) 
-	    *a3el-runtime-parsers*))
+  (make-a3el-parser :name ',name) 
+  *a3el-runtime-parsers*))
 
 (defmacro a3el-parser-input-mark ()
   `(progn
-     (if (= (a3el-parser-context-pos context) -1) (a3el-parser-fill-buffer))
-     (setf (a3el-parser-context-last-marker context) (a3el-parser-context-pos context))
-     (a3el-parser-context-last-marker context)))
+  (if (= (a3el-parser-context-pos context) -1) (a3el-parser-fill-buffer))
+  (setf (a3el-parser-context-last-marker context) (a3el-parser-context-pos context))
+  (a3el-parser-context-last-marker context)))
 
 (defmacro a3el-parser-input-rewind-to (p)
   `(a3el-parser-input-seek ,p))
@@ -969,39 +968,39 @@
 (defun a3el-parser-input-LT (k)
   "Get the ith token from the current position 1..n where k=1 is the first symbol of lookahead."
   (catch 'return
-    (if (= (a3el-parser-context-pos context) -1) (a3el-parser-fill-buffer))
-    (if (= k 0) (throw 'return nil))
-    (if (< k 0) (throw 'return (a3el-parser-input-LB (- k))))
-    (if (>= (+ (a3el-parser-context-pos context) k (- 1)) (length (a3el-parser-context-token-buffer context)))
-	(throw 'return *a3el-token-eof-token*))
-    (let ((i (a3el-parser-context-pos context))
-	  (n 1))
-      (while (< n k)
-	;;skip off-channel tokens
-	(setq i (a3el-parser-skip-off-token-channels (+ i 1)))
-	(incf n))
-      (let ((token-buffer (a3el-parser-context-token-buffer context)))
-	(if (>= i (length token-buffer))
-	    (throw 'return *a3el-token-eof-token*))
-	(aref token-buffer i))
-      )))
+  (if (= (a3el-parser-context-pos context) -1) (a3el-parser-fill-buffer))
+  (if (= k 0) (throw 'return nil))
+  (if (< k 0) (throw 'return (a3el-parser-input-LB (- k))))
+  (if (>= (+ (a3el-parser-context-pos context) k (- 1)) (length (a3el-parser-context-token-buffer context)))
+      (throw 'return *a3el-token-eof-token*))
+  (let ((i (a3el-parser-context-pos context))
+	(n 1))
+    (while (< n k)
+      ;;skip off-channel tokens
+      (setq i (a3el-parser-skip-off-token-channels (+ i 1)))
+      (incf n))
+    (let ((token-buffer (a3el-parser-context-token-buffer context)))
+      (if (>= i (length token-buffer))
+	  (throw 'return *a3el-token-eof-token*))
+      (aref token-buffer i))
+    )))
 
 
 (defun a3el-parser-input-LB (k)
   "Look backwards k tokens on-channel tokens"
   (catch 'return
-    (if (= (a3el-parser-context-pos context) -1) (a3el-parser-fill-buffer))
-    (if (= k 0) (throw 'return nil))
-    (if (< (- (a3el-parser-context-pos context) k) 0) (throw 'return nil))
-    (let ((i (a3el-parser-context-pos context))
-	  (n 1))
-      ;;find k good tokens looking backwards
-      (while (<= n k)
-	;;skip off-channel tokens
-	(setq i (a3el-parser-skip-off-token-channels-reverse (- i 1)))
-	(incf n))
-      (if (< i 0) (throw 'return nil))
-      (aref (a3el-parser-context-token-buffer context) i))))
+  (if (= (a3el-parser-context-pos context) -1) (a3el-parser-fill-buffer))
+  (if (= k 0) (throw 'return nil))
+  (if (< (- (a3el-parser-context-pos context) k) 0) (throw 'return nil))
+  (let ((i (a3el-parser-context-pos context))
+	(n 1))
+    ;;find k good tokens looking backwards
+    (while (<= n k)
+      ;;skip off-channel tokens
+      (setq i (a3el-parser-skip-off-token-channels-reverse (- i 1)))
+      (incf n))
+    (if (< i 0) (throw 'return nil))
+    (aref (a3el-parser-context-token-buffer context) i))))
 
 
 (defun a3el-parser-match (ttype follow)
@@ -1012,16 +1011,16 @@
   MismatchedTokenException upon input.LA(1)!=ttype."
   (cond 
 
-   ((eql (a3el-parser-input-LA 1) ttype)
-    (progn
-      (a3el-parser-input-consume)
-      (setf (a3el-parser-context-error-recovery context) nil)
-      (setf (a3el-parser-context-failed context) nil)))
+  ((eql (a3el-parser-input-LA 1) ttype)
+   (progn
+     (a3el-parser-input-consume)
+     (setf (a3el-parser-context-error-recovery context) nil)
+     (setf (a3el-parser-context-failed context) nil)))
 
-   ((> (a3el-parser-context-backtracking context) 0)
-    (setf (a3el-parser-context-failed context) t))
+  ((> (a3el-parser-context-backtracking context) 0)
+   (setf (a3el-parser-context-failed context) t))
 
-   (t (a3el-parser-mismatch ttype follow))))
+  (t (a3el-parser-mismatch ttype follow))))
 
 
 (defun a3el-parser-match-any ()
@@ -1041,21 +1040,21 @@
 (defun a3el-parser-recover-from-mismatched-token (error-type ttype follow)
   ;;if next token is what we are looking for then "delete" this token
   (if (= (a3el-parser-input-LA 2) ttype)
-      (progn
-	(a3el-parser-report-error e)
-	;;(begin-resync)
-	;;simply delete extra token
-	(a3el-parser-input-consume) 
-	;;(end-resync)
-	;;move past ttype token as if all were ok
-	(a3el-parser-input-consume))
-    (progn
-      ;; if (!recoverFromMismatchedElement(input,e,follow) ) {
-      ;;			throw e;
-      ;; }
-      (signal error-type nil)
-      )
-    ))
+  (progn
+    (a3el-parser-report-error e)
+    ;;(begin-resync)
+    ;;simply delete extra token
+    (a3el-parser-input-consume) 
+    ;;(end-resync)
+    ;;move past ttype token as if all were ok
+    (a3el-parser-input-consume))
+  (progn
+    ;; if (!recoverFromMismatchedElement(input,e,follow) ) {
+    ;;			throw e;
+    ;; }
+    (signal error-type nil)
+    )
+  ))
 
 
 (defun a3el-parser-recover-from-mismatched-token-no-type (error-type follow)
@@ -1075,32 +1074,32 @@
    Walk past any token not on the channel the parser is listening to."
   (if (< (a3el-parser-context-pos context) 
 	 (length (a3el-parser-context-token-buffer context)))
-      (progn
-	(incf (a3el-parser-context-pos context))
-	;; leave p on valid token
-	(setf (a3el-parser-context-pos context) 
-	      (a3el-parser-skip-off-token-channels (a3el-parser-context-pos context))))))
+  (progn
+    (incf (a3el-parser-context-pos context))
+    ;; leave p on valid token
+    (setf (a3el-parser-context-pos context) 
+	  (a3el-parser-skip-off-token-channels (a3el-parser-context-pos context))))))
 
 
 
 (defun a3el-parser-consume-until-type (token-type)
   "Consume tokens until one matches the given token set"
   (let ((ttype (a3el-parser-input-LA 1)))
-    (while (and (/= ttype *a3el-token-eof-token-type*) (/= ttype token-type))
-      (a3el-parser-input-consume)
-      (setf ttype (a3el-parser-input-LA 1))
-      )
-    ))
+  (while (and (/= ttype *a3el-token-eof-token-type*) (/= ttype token-type))
+    (a3el-parser-input-consume)
+    (setf ttype (a3el-parser-input-LA 1))
+    )
+  ))
 
 
 (defun a3el-parser-consume-until-in-set (set)
   "Consume tokens until one matches the given token set"
   (let ((ttype (a3el-parser-input-LA 1)))
-    (while (and (/= ttype *a3el-token-eof-token-type*) (not (a3el-bitset-member set ttype)))
-      (a3el-parser-input-consume)
-      (setf ttype (a3el-parser-input-LA 1))
-      )
-    ))
+  (while (and (/= ttype *a3el-token-eof-token-type*) (not (a3el-bitset-member set ttype)))
+    (a3el-parser-input-consume)
+    (setf ttype (a3el-parser-input-LA 1))
+    )
+  ))
 
 
 (defun a3el-parser-fill-buffer ()
@@ -1110,38 +1109,38 @@
   (let* ((lexer-context (a3el-parser-context-input context))
 	 (index 0)
 	 (tokens nil))
-    (a3el-lex-with-lexer 
-     lexer-context 
-     #'(lambda (token) 
-	 (if (and token (/= (a3el-common-token-type token) *a3el-token-eof-token-type*))
-	     (let ((discard nil))
-	       ;;// is there a channel override for token type?
-	       ;;if ( channelOverrideMap!=null ) {
-	       ;;	Integer channelI = (Integer)
-	       ;;		channelOverrideMap.get(new Integer(t.getType()));
-	       ;;	if ( channelI!=null ) {
-	       ;;		t.setChannel(channelI.intValue());
-	       ;;	}
-	       ;;}
-	       ;;if ( discardSet!=null &&
-	       ;;	 discardSet.contains(new Integer(t.getType())) )
-	       ;;{
-	       ;;	discard = true;
-	       ;;}
-	       ;;else if ( discardOffChannelTokens && t.getChannel()!=this.channel ) {
-	       ;;	discard = true;
-	       ;;}
-	       (if (not discard)
-		   (progn
-		     (setf (a3el-common-token-index token) index)
-		     (setf tokens (cons token tokens)) ;;TODO This should be more efficient.
-		     (incf index)))
-	       ))))
-    (setf (a3el-parser-context-token-buffer context) (vconcat (reverse tokens)))
-    (setf (a3el-parser-context-pos context) 0)
-    (setf (a3el-parser-context-pos context) (a3el-parser-skip-off-token-channels 0))
+  (a3el-lex-with-lexer 
+   lexer-context 
+   #'(lambda (token) 
+       (if (and token (/= (a3el-common-token-type token) *a3el-token-eof-token-type*))
+	   (let ((discard nil))
+	     ;;// is there a channel override for token type?
+	     ;;if ( channelOverrideMap!=null ) {
+	     ;;	Integer channelI = (Integer)
+	     ;;		channelOverrideMap.get(new Integer(t.getType()));
+	     ;;	if ( channelI!=null ) {
+	     ;;		t.setChannel(channelI.intValue());
+	     ;;	}
+	     ;;}
+	     ;;if ( discardSet!=null &&
+	     ;;	 discardSet.contains(new Integer(t.getType())) )
+	     ;;{
+	     ;;	discard = true;
+	     ;;}
+	     ;;else if ( discardOffChannelTokens && t.getChannel()!=this.channel ) {
+	     ;;	discard = true;
+	     ;;}
+	     (if (not discard)
+		 (progn
+		   (setf (a3el-common-token-index token) index)
+		   (setf tokens (cons token tokens)) ;;TODO This should be more efficient.
+		   (incf index)))
+	     ))))
+  (setf (a3el-parser-context-token-buffer context) (vconcat (reverse tokens)))
+  (setf (a3el-parser-context-pos context) 0)
+  (setf (a3el-parser-context-pos context) (a3el-parser-skip-off-token-channels 0))
 
-    ))
+  ))
 
 
 (defun a3el-parser-skip-off-token-channels (i)
@@ -1149,18 +1148,18 @@
   (let* ((token-buffer (a3el-parser-context-token-buffer context))
 	 (channel (a3el-parser-context-channel context))
 	 (n (length token-buffer)))
-    (while (and (< i n) (/= (a3el-common-token-channel (aref token-buffer i)) channel))
-      (incf i))
-    i))
+  (while (and (< i n) (/= (a3el-common-token-channel (aref token-buffer i)) channel))
+    (incf i))
+  i))
 
 
 (defun a3el-parser-skip-off-token-channels-reverse (i)
   "Given a starting index, return the index of the first on-channel token."
   (let* ((token-buffer (a3el-parser-context-token-buffer context))
 	 (channel (a3el-parser-context-channel context)))
-    (while (and (>= i 0) (/= (a3el-common-token-channel (aref token-buffer i)) channel))
-      (decf i))
-    i))
+  (while (and (>= i 0) (/= (a3el-common-token-channel (aref token-buffer i)) channel))
+    (decf i))
+  i))
 
 
 (defun a3el-parse-buffer (lname pname start-rule buffer)
@@ -1168,47 +1167,47 @@
   (let* ((context (make-a3el-parser-context 
 		   :input (a3el-lexer-for-buffer lname buffer 0 (buffer-size buffer))
 		   :parser (gethash pname *a3el-runtime-parsers*))))
-    (funcall (a3el-parser-entry-func (a3el-parser-context-parser context)) context start-rule)))
+  (funcall (a3el-parser-entry-func (a3el-parser-context-parser context)) context start-rule)))
 
 
 (defun a3el-parse-string (lname pname start-rule str) 
   "Create a temporary buffer containing only str and invoke the given lexer,parser and start-rule."
   (let* ((buffer  (a3el-buffer-from-string str)))
-    (a3el-parse-buffer lname pname start-rule buffer)))
+  (a3el-parse-buffer lname pname start-rule buffer)))
 
 
 (defmacro a3el-parser-push-follow (rule-name)
   `(progn 
-     (if (>= (+ (a3el-parser-context-fsp context) 1)
-	     (length (a3el-parser-context-following context)))
-	 (let ((f (vconcat (a3el-parser-context-following context) 
-			   (make-vector (length (a3el-parser-context-following context)) nil))))
-	   (setf (a3el-parser-context-following context) f)))
-     (incf (a3el-parser-context-fsp context))
-     (aset (a3el-parser-context-following context)
-	   (a3el-parser-context-fsp context)
-	   ,rule-name)
-     ))
+  (if (>= (+ (a3el-parser-context-fsp context) 1)
+	  (length (a3el-parser-context-following context)))
+      (let ((f (vconcat (a3el-parser-context-following context) 
+			(make-vector (length (a3el-parser-context-following context)) nil))))
+	(setf (a3el-parser-context-following context) f)))
+  (incf (a3el-parser-context-fsp context))
+  (aset (a3el-parser-context-following context)
+	(a3el-parser-context-fsp context)
+	,rule-name)
+  ))
 
 (defmacro a3el-parser-call-rule (name)
   `(progn 
      ;;(message (concat "calling rule " (format "%s" ',name))) 
-     (funcall (gethash ',name (a3el-parser-rules (a3el-parser-context-parser context))) context)))
+  (funcall (gethash ',name (a3el-parser-rules (a3el-parser-context-parser context))) context)))
 
 (defmacro a3el-parser-call-synpred (synpred-rule-name)
   `(progn
-     (incf (a3el-parser-context-backtracking context))
-     (let ((start (a3el-parser-input-mark))
-	   (success nil))
-       (condition-case er
-	   (a3el-parser-call-rule ,synpred-rule-name) ;; can never throw exception
-	 (a3el-re-error
-	  (throw er "Illegal state! synpreds cannot throw exceptions.")))
-       (setq success (not (a3el-parser-context-failed context)))
-       (a3el-parser-input-rewind-to start)
-       (decf (a3el-parser-context-backtracking context))
-       (setf (a3el-parser-context-failed context) nil)
-       success)))
+  (incf (a3el-parser-context-backtracking context))
+  (let ((start (a3el-parser-input-mark))
+	(success nil))
+    (condition-case er
+	(a3el-parser-call-rule ,synpred-rule-name) ;; can never throw exception
+      (a3el-re-error
+       (throw er "Illegal state! synpreds cannot throw exceptions.")))
+    (setq success (not (a3el-parser-context-failed context)))
+    (a3el-parser-input-rewind-to start)
+    (decf (a3el-parser-context-backtracking context))
+    (setf (a3el-parser-context-failed context) nil)
+    success)))
 
 
 (defun a3el-parser-report-error (re)
@@ -1225,11 +1224,11 @@
    		5. next match() will reset errorRecovery mode
    "
   (unless (a3el-parser-context-error-recovery context)
-    (setf (a3el-parser-context-error-recovery context) t)
+  (setf (a3el-parser-context-error-recovery context) t)
 
-    (if (boundp '*a3el-swallowed-recogition-errors*)
-	(push re *a3el-swallowed-recogition-errors*)
-      (a3el-display-recognition-error re))))
+  (if (boundp '*a3el-swallowed-recogition-errors*)
+      (push re *a3el-swallowed-recogition-errors*)
+    (a3el-display-recognition-error re))))
 
 (defun a3el-parser-recover (re)
   "Recover from an error found on the input stream.  Mostly this is
@@ -1242,17 +1241,17 @@
       ;; where LT(1) is in the recovery token set so nothing is
       ;; consumed	       ; consume a single token so at least to prevent
       ;; an infinite loop  ; this is a failsafe.
-      (a3el-parser-input-consume)
-    )
+  (a3el-parser-input-consume)
+  )
 
   (setf (a3el-parser-context-last-error-index context)
-	(a3el-parser-context-pos context))
+  (a3el-parser-context-pos context))
 
   (let ((follow-set (a3el-parser-compute-error-recovery-set)))
     ;;(begin-resync)
-    (a3el-parser-consume-until-in-set follow-set)
-    ;;(end-resync)
-    ))
+  (a3el-parser-consume-until-in-set follow-set)
+  ;;(end-resync)
+  ))
 
 
 (defun a3el-parser-compute-error-recovery-set () 
@@ -1277,18 +1276,18 @@
 (defun a3el-parser-combine-follows (exact)
   (let ((top (a3el-parser-context-fsp context))
 	(follow-set (make-a3el-bitset)))
-    (let ((i top))
-      (catch 'break
-	(while (>= i 0)
-	  (let ((local-follow-set (aref (a3el-parser-context-following context) i)))
-	    (a3el-bitset-or-in-place follow-set local-follow-set)
-	    (if (and exact (not (a3el-bitset-member local-follow-set *a3el-token-eor-token-type*)))
-		(throw 'break nil))
-	    (decf i)
-	    ))))
-    (a3el-bitset-remove follow-set *a3el-token-eor-token-type*)
-    follow-set
-    ))
+  (let ((i top))
+    (catch 'break
+      (while (>= i 0)
+	(let ((local-follow-set (aref (a3el-parser-context-following context) i)))
+	  (a3el-bitset-or-in-place follow-set local-follow-set)
+	  (if (and exact (not (a3el-bitset-member local-follow-set *a3el-token-eor-token-type*)))
+	      (throw 'break nil))
+	  (decf i)
+	  ))))
+  (a3el-bitset-remove follow-set *a3el-token-eor-token-type*)
+  follow-set
+  ))
 
 
 (defun a3el-display-recognition-error (re)
@@ -1304,19 +1303,19 @@
   "Collect all recognition errors output withing the dynamic extent of body
    and return them in a list."
   `(let ((*a3el-swallowed-recogition-errors* '()))
-     ,@body
-     (reverse *a3el-swallowed-recogition-errors*)
-     ))
+  ,@body
+  (reverse *a3el-swallowed-recogition-errors*)
+  ))
 
 
 (defun a3el-buffer-from-string (str)
   (let ((buffer (generate-new-buffer (generate-new-buffer-name "*antlr string lexing*"))))
-    (save-excursion
-      (with-current-buffer buffer
-	(insert str)
-	(goto-char (point-min))
-	(set-buffer-modified-p nil)))
-    buffer))
+  (save-excursion
+    (with-current-buffer buffer
+      (insert str)
+      (goto-char (point-min))
+      (set-buffer-modified-p nil)))
+  buffer))
 
 
 (defmacro a3el-alt-case (expr-form &rest clauses)
@@ -1325,15 +1324,15 @@
   ;; (message "%s" (macroexpand '(a3el-alt-case (+ 1 2) (5 1 3) (3 t) (2) (t nil))))
   ;; (message "%s" (macroexpand '(case           (+ 1 2) (5 1 3) (3 t) (2) (t nil))))
   (let ((val-sym (gensym)))
-    `(let ((,val-sym ,expr-form))
-       (cond ,@(mapcar (lambda (c)
-			 (let ((tail (cond 
-				      ((> (length (cdr c)) 0) (cdr c))
-				      (t (list (car c))))))
-			   (if (memq (car c) '(t otherwise))
-			       `(t ,@tail)
-			     `((eql ,val-sym ,(car c)) ,@tail))))
-		       clauses)))))
+  `(let ((,val-sym ,expr-form))
+     (cond ,@(mapcar (lambda (c)
+		       (let ((tail (cond 
+				    ((> (length (cdr c)) 0) (cdr c))
+				    (t (list (car c))))))
+			 (if (memq (car c) '(t otherwise))
+			     `(t ,@tail)
+			   `((eql ,val-sym ,(car c)) ,@tail))))
+		     clauses)))))
 
 (defmacro a3el-lookahead-let-bindings (prefix max-k &rest body)
   "A helper macro for generating the bindings for temporary lookahead
@@ -1341,11 +1340,11 @@
   ;; (macroexpand '(a3el-lookahead-let-bindings "LA0_" 10 'hello))
   (let ((bindings '())
 	(num-bindings (max max-k 100)))
-    (dotimes (i num-bindings)
-      (let ((var-name (intern (concat prefix (number-to-string i)))))
-	(setq bindings (append bindings `((,var-name nil))))))
-    `(let (,@bindings)
-       ,@body)))
+  (dotimes (i num-bindings)
+    (let ((var-name (intern (concat prefix (number-to-string i)))))
+      (setq bindings (append bindings `((,var-name nil))))))
+  `(let (,@bindings)
+     ,@body)))
 
 
 (provide 'a3el-runtime)

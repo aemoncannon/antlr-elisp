@@ -4,7 +4,7 @@ options {
 	output = AST;
 }
 
-evaluate : expression EOF;
+evaluate : expression^ EOF!;
 
 expression : 
     mult (
