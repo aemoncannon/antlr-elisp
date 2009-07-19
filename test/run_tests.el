@@ -55,5 +55,6 @@
 (load "closures_test.el")
 (load "synpred_test.el")
 (load "css_test.el")
+(load "auto_ast_test.el")
 
 ;;; run_tests.el ends here
