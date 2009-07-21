@@ -54,9 +54,9 @@ ruleLabelDefs() ::= <<
 <ruleDescriptor.tokenLabels:{(<it.label.text>_tree nil)}; separator="\n">
 <ruleDescriptor.tokenListLabels:{<it.label.text>_tree nil)}; separator="\n">
 <ruleDescriptor.allTokenRefsInAltsWithRewrites
-    :{(stream_<it> (make-a3el-rewrite-token-stream :adaptor adaptor :element-description "token <it>") }; separator="\n">
+    :{(stream_<it> (make-a3el-rewrite-token-stream :adaptor adaptor :element-description "token <it>")) }; separator="\n">
 <ruleDescriptor.allRuleRefsInAltsWithRewrites
-    :{(stream_<it> (make-a3el-rewrite-subtree-stream :adaptor adaptor :element-description "rule <it>") }; separator="\n">
+    :{(stream_<it> (make-a3el-rewrite-subtree-stream :adaptor adaptor :element-description "rule <it>")) }; separator="\n">
 >>
 
 ruleCleanUp() ::= <<
@@ -282,7 +282,7 @@ rewriteCode(
 
 <if(backtracking)>(if (= (a3el-parser-context-backtracking 0)) <endif>
 
-(setf (a3el-retval-tree retval) root_0)
+(setf (a3el-retval-tree <prevRuleRootRef()>) root_0)
 <rewriteCodeLabels()>
 (setq root_0 (funcall adaptor-new-nil))
 <alts:rewriteAlt(); separator="else ">
@@ -292,25 +292,25 @@ rewriteCode(
 
 rewriteCodeLabels() ::= <<
 <referencedTokenLabels
-    :{ (stream_<it> (let ((s (make-a3el-rewrite-token-stream :adaptor adaptor :element-description "token <it>")))
+    :{ (setq stream_<it> (let ((s (make-a3el-rewrite-token-stream :adaptor adaptor :element-description "token <it>")))
                      (a3el-rewrite-stream-add s <it>)))
       };
     separator="\n"
 >
 <referencedTokenListLabels
-    :{ (stream_<it> (let ((s (make-a3el-rewrite-token-stream :adaptor adaptor :element-description "token <it>")))
+    :{ (setq stream_<it> (let ((s (make-a3el-rewrite-token-stream :adaptor adaptor :element-description "token <it>")))
                      (setf (a3el-rewrite-stream-elements s) list_<it>)))
       };
     separator="\n"
 >
 <referencedRuleLabels
-    :{ (stream_<it> (let ((s (make-a3el-rewrite-subtree-stream :adaptor adaptor :element-description "token <it>")))
+    :{ (setq stream_<it> (let ((s (make-a3el-rewrite-subtree-stream :adaptor adaptor :element-description "token <it>")))
                      (a3el-rewrite-stream-add s (if (null <it>) nil (a3el-retval-tree <it>)))))
       };
     separator="\n"
 >
 <referencedRuleListLabels
-    :{ (stream_<it> (let ((s (make-a3el-rewrite-subtree-stream :adaptor adaptor :element-description "token <it>")))
+    :{ (setq stream_<it> (let ((s (make-a3el-rewrite-subtree-stream :adaptor adaptor :element-description "token <it>")))
                      (setf (a3el-rewrite-stream-elements s) list_<it>)))
       };
     separator="\n"
@@ -364,19 +364,21 @@ rewriteAlt(a) ::= <<
 <if(a.pred)>
 (if (<a.pred>)
    (progn
-    <a.alt>)
-    (progn
-    <a.alt>))
+    <a.alt>
+    ))
+<else>
+(progn
+    <a.alt>
+    )
 <endif>
 >>
 
 /** For empty rewrites: "r : ... -> ;" */
-rewriteEmptyAlt() ::= "root_0 = null;"
+rewriteEmptyAlt() ::= "(setq root_0 nil)"
 
 rewriteTree(root,children,description,enclosingTreeLevel,treeLevel) ::= <<
 ;; <fileName>:<description>
-(let (
- (root_<treeLevel> (funcall adaptor-new-nil))
+(let ((root_<treeLevel> (funcall adaptor-new-nil)))
  <root:rewriteElement()>
  <children:rewriteElement()>
  (funcall adaptor-add-child root_<enclosingTreeLevel> root_<treeLevel>)
