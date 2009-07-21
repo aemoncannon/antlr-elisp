@@ -31,7 +31,7 @@ exp : atom ('^'^ atom )? ;
 atom :
     INTEGER
   | DECIMAL
-  | '(' expression ')'
+  | '('! expression ')'!
   | 'PI'
   | 'E'
   ;

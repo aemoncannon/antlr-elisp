@@ -3,44 +3,46 @@
 
 (test "Full calc parsing with AST generation"
 
-      (let* ((result (do-parse 'full_calc_ast_operators_elispLexer 'full_calc_ast_operators_elispParser 'evaluate "42"))
+
+      (let* ((src "42")
+	     (result (do-parse 'full_calc_ast_operators_elispLexer 'full_calc_ast_operators_elispParser 'evaluate src))
 	     (tree (a3el-retval-tree result)))
-	(assert-false "Should not result in nil tree. We hoist expression with ^ operator."
-		     (a3el-common-tree-is-nil tree))
-
-	(assert-equal "Should have 0 children, the 42 token should be the root. EOF is ommitted with a ! operator."
-		      0 (length (a3el-common-tree-children tree)))
-	)
-
-      (let* ((result (do-parse 'full_calc_ast_operators_elispLexer 'full_calc_ast_operators_elispParser 'evaluate "42 + 64"))
-	     (tree (a3el-retval-tree result)))
-
-	(assert-false "Result should not be a nil tree."
-		      (a3el-common-tree-is-nil tree))
-
-	(assert-equal "Should have 2 children, the two number tokens."
-		      2
-		      (length (a3el-common-tree-children tree)))
-
+	(assert-tree-match src '("42") tree)
 	)
 
 
-      ;;      (assert-equal "One operator"
-      ;;                    nil
-      ;;                    (do-parse 'full_calc_elispLexer 'full_calc_elispParser 'evaluate "10 + 2"))
-      ;;
-      ;;      (assert-equal "Two operators.."
-      ;;                    nil
-      ;;                    (do-parse 'full_calc_elispLexer 'full_calc_elispParser 'evaluate "10 + 2 * 4"))
-      ;;
-      ;;      (assert-equal "Paren nesting"
-      ;;                    nil
-      ;;                    (do-parse 'full_calc_elispLexer 'full_calc_elispParser 'evaluate "(10 + (2 + 2)) * 4"))
-      ;;
-      ;;      (assert-equal "More functions"
-      ;;                    nil
-      ;;                    (do-parse 'full_calc_elispLexer 'full_calc_elispParser 'evaluate "(ln 10 + (PI + 2)) * 3.2"))
-      ;;
+      (let* ((src "42 + 64")
+	     (result (do-parse 'full_calc_ast_operators_elispLexer 'full_calc_ast_operators_elispParser 'evaluate src))
+	     (tree (a3el-retval-tree result)))
+	(assert-tree-match src '("+" (("42") ("64"))) tree)
+	)
+
+
+      (let* ((src "42 * 64 + 23 * 0.1")
+	     (result (do-parse 'full_calc_ast_operators_elispLexer 'full_calc_ast_operators_elispParser 'evaluate src))
+	     (tree (a3el-retval-tree result)))
+	(assert-tree-match src '("+" ( ("*" (("42")("64"))) ("*" (("23")("0.1"))) ) ) tree)
+	)
+
+      (let* ((src "(42 * 64) + (23 * 0.1)")
+	     (result (do-parse 'full_calc_ast_operators_elispLexer 'full_calc_ast_operators_elispParser 'evaluate src))
+	     (tree (a3el-retval-tree result)))
+	(assert-tree-match src '("+" ( ("*" (("42")("64"))) ("*" (("23")("0.1"))) ) ) tree)
+	)
+
+      (let* ((src "((42 * 64) + (23 * 0.1))^PI")
+	     (result (do-parse 'full_calc_ast_operators_elispLexer 'full_calc_ast_operators_elispParser 'evaluate src))
+	     (tree (a3el-retval-tree result)))
+	(assert-tree-match src '("^" (("+" ( ("*" (("42")("64"))) ("*" (("23")("0.1"))) ) ) ("PI"))) tree)
+	)
+
+      (let* ((src "ln 2.0123^E")
+	     (result (do-parse 'full_calc_ast_operators_elispLexer 'full_calc_ast_operators_elispParser 'evaluate src))
+	     (tree (a3el-retval-tree result)))
+	(assert-tree-match src '("ln" (("^" ( ("2.0123") ("E"))))) tree)
+	)
+
+
       )
 
 
