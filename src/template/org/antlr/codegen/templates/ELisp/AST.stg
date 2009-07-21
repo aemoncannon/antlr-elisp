@@ -363,13 +363,10 @@ rewriteAlt(a) ::= <<
 ;; <a.description>
 <if(a.pred)>
 (if (<a.pred>)
-   (progn
-    <a.alt>
-    ))
-<else>
-(progn
     <a.alt>
     )
+<else>
+    <a.alt>
 <endif>
 >>
 
