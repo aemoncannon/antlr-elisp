@@ -93,7 +93,7 @@ tokenRef(token,label,elementIndex) ::= <<
 <super.tokenRef(...)>
 <if(backtracking)>(if (= (a3el-parser-context-backtracking context) 0)<endif>
 (progn
-(setq <label>_tree (funcall adaptor-create1 <label>))
+(setq <label>_tree (funcall adaptor-create <label>))
 (funcall adaptor-add-child root_0 <label>_tree))
 <if(backtracking)>)<endif>
 >>
@@ -106,7 +106,7 @@ tokenRefRuleRoot(token,label,elementIndex) ::= <<
 <super.tokenRef(...)>
 <if(backtracking)>(if (= (a3el-parser-context-backtracking context) 0)<endif>
 (progn
-(setq <label>_tree (funcall adaptor-create1 <label>))
+(setq <label>_tree (funcall adaptor-create <label>))
 (setq root_0 (funcall adaptor-become-root <label>_tree root_0)))
 <if(backtracking)>)<endif>
 >>
@@ -165,7 +165,7 @@ tokenRefTrackAndListLabel(token,label,elementIndex) ::= <<
 matchSet(s,label,elementIndex,postmatchCode) ::= <<
 <super.matchSet(..., postmatchCode={
 		     <if(backtracking)>(if (= (a3el-parser-context-backtracking context) 0) <endif>
-		     (funcall adaptor-add-child root_0 (funcall adaptor-create1 <label>))
+		     (funcall adaptor-add-child root_0 (funcall adaptor-create <label>))
 		     <if(backtracking)>)<endif>
 })>
 >>
@@ -178,7 +178,7 @@ matchSetBang(s,label,elementIndex,postmatchCode) ::= "<super.matchSet(...)>"
 matchSetRuleRoot(s,label,elementIndex,debug) ::= <<
 <super.matchSet(..., postmatchCode={
 		     <if(backtracking)>(if (= (a3el-parser-context-backtracking context) 0) <endif>
-		     (setq root_0  (funcall adaptor-become-root (funcall adaptor-create1 <label>) root_0))
+		     (setq root_0  (funcall adaptor-become-root (funcall adaptor-create <label>) root_0))
 		     <if(backtracking)>)<endif>
 })>
 >>
@@ -242,7 +242,7 @@ wildcard(label,elementIndex) ::= <<
 <super.wildcard(...)>
 <if(backtracking)>(if (= (a3el-parser-context-backtracking context) 0) <endif>
 (progn
-(setq <label>_tree (funcall adaptor-create1 <label>))
+(setq <label>_tree (funcall adaptor-create <label>))
 (funcall adaptor-add-child root_0 <label>_tree))
 <if(backtracking)>)<endif>
 >>
@@ -253,7 +253,7 @@ wildcardRuleRoot(label,elementIndex) ::= <<
 <super.wildcard(...)>
 <if(backtracking)>(if (= (a3el-parser-context-backtracking context) 0) <endif>
 (progn
-(setq <label>_tree (funcall adaptor-create1 <label>))
+(setq <label>_tree (funcall adaptor-create <label>))
 (setq root_0 (funcall adaptor-become-root <label>_tree root_0)))
 <if(backtracking)>)<endif>
 >>
@@ -392,7 +392,7 @@ rewriteElement(e) ::= <<
 /** Gen ID or ID[args] */
 rewriteTokenRef(token,elementIndex,args) ::= <<
 (funcall adaptor-add-child root_<treeLevel> 
-	 <if(args)>(funcall adaptor-create2 <token> <args; separator=" ">)
+	 <if(args)>(funcall adaptor-create <token> <args; separator=" ">)
 	 <else>
 	 (a3el-rewrite-stream-next stream_<token>)
 	 <endif>
@@ -421,7 +421,7 @@ rewriteTokenListLabelRefRoot ::= rewriteTokenLabelRefRoot
 rewriteTokenRefRoot(token,elementIndex,args) ::= <<
 (setq root_<treeLevel> (funcall adaptor-become-root 
       <if(args)>
-      (funcall adaptor-create2 <token> <args; separator=" ">)
+      (funcall adaptor-create <token> <args; separator=" ">)
       <else>
       (a3el-rewrite-stream-next stream_<token>)
       <endif>
@@ -431,13 +431,13 @@ rewriteTokenRefRoot(token,elementIndex,args) ::= <<
 
 rewriteImaginaryTokenRef(args,token,elementIndex) ::= <<
 (funcall adaptor-add-child root_<treeLevel> 
-	 (funcall adaptor-create2 <token> <args; separator=" "> <if(!args)>"<token>"<endif>)
+	 (funcall adaptor-create <token> <args; separator=" "> <if(!args)>"<token>"<endif>)
 	 )<\n>
 >>
 
 rewriteImaginaryTokenRefRoot(args,token,elementIndex) ::= <<
 (setq root_<treeLevel> (funcall adaptor-become-root 
-      (funcall adaptor-create2 <token> <args; separator=" "><if(!args)>"<token>"<endif>)
+      (funcall adaptor-create <token> <args; separator=" "><if(!args)>"<token>"<endif>)
       root_<treeLevel>
       ))<\n>
 >>

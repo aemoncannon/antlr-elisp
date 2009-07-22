@@ -5,16 +5,14 @@ options {
 }
 
 tokens {
-    LN;
+    EXPR;
+    NATURAL_LOG;
 }
 
-evaluate : expression^ EOF!;
+evaluate : expression EOF -> ^(EXPR expression);
 
 expression : 
-    mult (
-    '+'^ mult
-  | '-'^ mult
-  )*
+    mult ('+'^ mult | '-'^ mult )*
     ;
 
 mult : 
@@ -26,11 +24,11 @@ mult :
   ;
 
 log : 
-    'ln' exp -> ^('ln' exp)
-  | exp 
+    'ln' exp -> ^(NATURAL_LOG exp)
+  | exp
   ;
 
-exp : atom ('^'^ atom )? ;
+exp : atom ('^'^ atom )?;
 
 atom :
     INTEGER

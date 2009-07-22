@@ -41,7 +41,8 @@
   (let ((all-tokens ()))
     (a3el-lex-string name str #'(lambda (token) 
 				  (when (= (a3el-common-token-channel token) 0)
-				    (setq all-tokens (cons (cons (a3el-lexer-token-type token) (a3el-lexer-token-text token)) all-tokens)))))
+				    (setq all-tokens (cons (cons (a3el-common-token-type token) 
+								 (a3el-common-token-get-text token)) all-tokens)))))
     (reverse all-tokens)))
 
 
@@ -49,28 +50,31 @@
   (a3el-parse-string lexerName parserName start-rule str))
 
   
-(defun assert-tree-match (text pattern tree)
+(defun assert-tree-match (pattern tree)
   "Given a pattern and a a3el-common-tree, check that the pattern is a satisfactory 
-   abbreviation for the tree, with respect to text."
-  (if (null (car pattern))
-      (if (a3el-common-tree-is-nil tree)
-	  (assert-trees-match text (cadr pattern) (a3el-common-tree-children tree))
-	(signal 'test-failed (format "Expecting nil tree, found %s." tree)))
-    (let* ((tok (a3el-common-tree-token tree))
-	   (start (a3el-common-token-start tok))
-	   (stop (a3el-common-token-stop tok))
-	   (str (substring text (- start 1) (- stop 1))))
-      (if (equal str (car pattern))
-	  (assert-trees-match text (cadr pattern) (a3el-common-tree-children tree))
-	(signal 'test-failed (format "Expecting node with text '%s', found %s." (car pattern) str))))))
+   abbreviation for the tree."
+  (cond ((and (null (car pattern)) (a3el-common-tree-is-nil tree))
+	 (assert-trees-match (cadr pattern) (a3el-common-tree-children tree)))
 
-(defun assert-trees-match (text patterns trees)
+	((and (null (car pattern)) (not (a3el-common-tree-is-nil tree)))
+	 (signal 'test-failed (format "Expecting nil tree, found %s." tree)))
+
+	((and (not (null (car pattern))) (a3el-common-tree-is-nil tree))
+	 (signal 'test-failed (format "Found nil tree, was expecting tree with text '%s'." (car pattern))))
+
+	(t (let* ((tok (a3el-common-tree-token tree))
+		  (str (a3el-common-token-get-text tok)))
+	     (if (or (equal str (car pattern)) )
+		 (assert-trees-match (cadr pattern) (a3el-common-tree-children tree))
+	       (signal 'test-failed (format "Expecting tree with text '%s', found %s." (car pattern) str)))))))
+
+(defun assert-trees-match (patterns trees)
   "Helper for assert-tree-match. Match a list of trees."
   (catch 'return
     (dotimes (i (length patterns))
       (let ((pattern (nth i patterns))
 	    (tree (nth i trees)))
-	(if (not (assert-tree-match text pattern tree))
+	(if (not (assert-tree-match pattern tree))
 	    (throw 'return nil))
 	))
     t))

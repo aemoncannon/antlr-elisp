@@ -5,10 +5,11 @@ options {
 }
 
 tokens {
-    LN;
+    EXPR;
+    NATURAL_LOG;
 }
 
-evaluate : expression^ EOF!;
+evaluate : expression EOF -> ^(EXPR expression);
 
 expression : 
     mult (
@@ -26,7 +27,7 @@ mult :
   ;
 
 log : 
-    'ln' exp -> ^('ln' exp)
+    'ln' exp -> ^(NATURAL_LOG exp)
   | exp 
   ;
 
