@@ -109,7 +109,7 @@
 
 (defun a3el-common-token-get-text (token)
   "Retrieve the corresponding text from the input buffer. As opposed to 
-   a3el-common-token-get-text, which just returns the stored text."
+   a3el-common-token-text, which just returns the stored text."
   (cond
    ((not (null (a3el-common-token-text token)))
     (a3el-common-token-text token))
