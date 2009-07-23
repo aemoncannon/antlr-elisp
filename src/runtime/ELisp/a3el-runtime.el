@@ -182,8 +182,10 @@
   "Add an element to this stream."
   (unless (null el)
     (setf (a3el-rewrite-stream-elements s)
-	  (nreverse 
-	   (cons el (a3el-rewrite-stream-elements s))))))
+	  (append 
+	   (a3el-rewrite-stream-elements s)
+	   (list el)
+	   ))))
 
 
 (defun a3el-rewrite-stream-next (s)

@@ -7,10 +7,7 @@ options {
 evaluate : expression^ EOF!;
 
 expression : 
-    mult (
-    '+'^ mult
-  | '-'^ mult
-  )*
+    mult ( '+'^ mult | '-'^ mult )*
     ;
 
 mult : 

@@ -7,20 +7,16 @@ options {
 tokens {
     EXPR;
     NATURAL_LOG;
+    FOO;
 }
 
 evaluate : expression EOF -> ^(EXPR expression);
 
 expression : 
-    mult ('+'^ mult | '-'^ mult )*
-    ;
+    mult ('+' mult | '-' mult )* -> ^(FOO mult*);
 
 mult : 
-    log (
-    '*'^ log
-  | '/'^ log 
-  | '%'^ log 
-  )* 
+    log ('*'^ log | '/'^ log | '%'^ log )*
   ;
 
 log : 

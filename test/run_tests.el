@@ -54,7 +54,7 @@
   "Given a pattern and a a3el-common-tree, check that the pattern is a satisfactory 
    abbreviation for the tree."
   (cond ((and (null (car pattern)) (a3el-common-tree-is-nil tree))
-	 (assert-trees-match (cadr pattern) (a3el-common-tree-children tree)))
+	 (assert-trees-match (cdr pattern) (a3el-common-tree-children tree)))
 
 	((and (null (car pattern)) (not (a3el-common-tree-is-nil tree)))
 	 (signal 'test-failed (format "Expecting nil tree, found %s." tree)))
@@ -65,7 +65,7 @@
 	(t (let* ((tok (a3el-common-tree-token tree))
 		  (str (a3el-common-token-get-text tok)))
 	     (if (or (equal str (car pattern)) )
-		 (assert-trees-match (cadr pattern) (a3el-common-tree-children tree))
+		 (assert-trees-match (cdr pattern) (a3el-common-tree-children tree))
 	       (signal 'test-failed (format "Expecting tree with text '%s', found %s." (car pattern) str)))))))
 
 (defun assert-trees-match (patterns trees)
