@@ -8,6 +8,7 @@ tokens {
     EXPR;
     NATURAL_LOG;
     FOO;
+    GEESE;
 }
 
 evaluate : expression EOF -> ^(EXPR expression);
@@ -32,7 +33,10 @@ atom :
   | '('! expression ')'!
   | 'PI'
   | 'E'
+  | GOOSE -> ^(GEESE GOOSE GOOSE)
   ;
+
+GOOSE: 'GOOSE';
 
 INTEGER: DIGIT+;
 DECIMAL: DIGIT+ '.' DIGIT+;

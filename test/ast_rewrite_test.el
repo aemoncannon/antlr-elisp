@@ -22,6 +22,12 @@
 	(assert-tree-match '("EXPR" ("FOO" ("NATURAL_LOG" ("42")))) tree)
 	)
 
+      (let* ((src "GOOSE")
+	     (result (do-parse 'full_calc_ast_rewrite_elispLexer 'full_calc_ast_rewrite_elispParser 'evaluate src))
+	     (tree (a3el-retval-tree result)))
+	(assert-tree-match '("EXPR" ("FOO" ("GEESE" ("GOOSE") ("GOOSE")))) tree)
+	)
+
 
       ;;      (let* ((src "42 + 64")
       ;;	     (result (do-parse 'full_calc_ast_rewrite_elispLexer 'full_calc_ast_rewrite_elispParser 'evaluate src))
