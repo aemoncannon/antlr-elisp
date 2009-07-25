@@ -677,16 +677,14 @@
      (while (< (point) ,index) 
        (a3el-lexer-input-consume))))
 
-(defun a3el-lexer-set-type (type)
-  (setf (a3el-lexer-context-type context) type))
+(defmacro a3el-lexer-set-type (type)
+  `(setf (a3el-lexer-context-type context) ,type))
 
-(defun a3el-lexer-set-channel (c)
-  (setf (a3el-lexer-context-channel context) c))
+(defmacro a3el-lexer-set-channel (c)
+  `(setf (a3el-lexer-context-channel context) ,c))
 
 (defmacro a3el-lexer-call-rule (name)
-  `(progn 
-     ;;(message (concat "calling rule " (format "%s" ',name))) 
-     (funcall (gethash ',name (a3el-lexer-rules (a3el-lexer-context-lexer context))) context)))
+  `(funcall (gethash ',name (a3el-lexer-rules (a3el-lexer-context-lexer context))) context))
 
 (defmacro a3el-lexer-token-id (name)
   `(gethash ',name (a3el-lexer-tokens (a3el-lexer-context-lexer context))))
@@ -1048,30 +1046,30 @@
 (defmacro a3el-parser-input-seek (p)
   `(setf (a3el-parser-context-pos context) ,p))
 
+
+(defmacro a3el-parser-input-LT (k)
+  "Get the ith token from the current position 1..n where k=1 is the first symbol of lookahead."
+  `(catch 'return
+     (if (= (a3el-parser-context-pos context) -1) (a3el-parser-fill-buffer))
+     (if (= ,k 0) (throw 'return nil))
+     (if (< ,k 0) (throw 'return (a3el-parser-input-LB (- ,k))))
+     (if (>= (+ (a3el-parser-context-pos context) ,k -1)
+	     (length (a3el-parser-context-token-buffer context)))
+	 (throw 'return *a3el-token-eof-token*))
+     (let ((i (a3el-parser-context-pos context))
+	   (n 1))
+       (while (< n ,k)
+	 ;;skip off-channel tokens
+	 (setq i (a3el-parser-skip-off-token-channels (+ i 1)))
+	 (setq n (+ n 1)))
+       (let ((token-buffer (a3el-parser-context-token-buffer context)))
+	 (if (>= i (length token-buffer))
+	     (throw 'return *a3el-token-eof-token*))
+	 (aref token-buffer i))
+       )))
+
 (defmacro a3el-parser-input-LA (k)
   `(a3el-common-token-type (a3el-parser-input-LT ,k)))
-
-
-(defun a3el-parser-input-LT (k)
-  "Get the ith token from the current position 1..n where k=1 is the first symbol of lookahead."
-  (catch 'return
-    (if (= (a3el-parser-context-pos context) -1) (a3el-parser-fill-buffer))
-    (if (= k 0) (throw 'return nil))
-    (if (< k 0) (throw 'return (a3el-parser-input-LB (- k))))
-    (if (>= (+ (a3el-parser-context-pos context) k -1)
-	    (length (a3el-parser-context-token-buffer context)))
-	(throw 'return *a3el-token-eof-token*))
-    (let ((i (a3el-parser-context-pos context))
-	  (n 1))
-      (while (< n k)
-	;;skip off-channel tokens
-	(setq i (a3el-parser-skip-off-token-channels (+ i 1)))
-	(setq n (+ n 1)))
-      (let ((token-buffer (a3el-parser-context-token-buffer context)))
-	(if (>= i (length token-buffer))
-	    (throw 'return *a3el-token-eof-token*))
-	(aref token-buffer i))
-      )))
 
 
 (defun a3el-parser-input-LB (k)
@@ -1091,6 +1089,32 @@
       (aref (a3el-parser-context-token-buffer context) i))))
 
 
+(defmacro a3el-parser-input-consume ()
+  "Move the input pointer to the next incoming token.  The stream
+   must become active with LT(1) available.  consume() simply
+   moves the input pointer so that LT(1) points at the next
+   input symbol. Consume at least one token.
+   Walk past any token not on the channel the parser is listening to."
+  `(if (< (a3el-parser-context-pos context)
+	  (length (a3el-parser-context-token-buffer context)))
+       (progn
+	 (incf (a3el-parser-context-pos context))
+	 ;; leave p on valid token
+	 (setf (a3el-parser-context-pos context)
+	       (a3el-parser-skip-off-token-channels (a3el-parser-context-pos context))))))
+
+
+
+(defmacro a3el-parser-consume-until-type (token-type)
+  "Consume tokens until one matches the given token set"
+  `(let ((ttype (a3el-parser-input-LA 1)))
+     (while (and (/= ttype *a3el-token-eof-token-type*) (/= ttype ,token-type))
+       (a3el-parser-input-consume)
+       (setf ttype (a3el-parser-input-LA 1))
+       )
+     ))
+
+
 (defun a3el-parser-match (ttype follow)
   "Match current input symbol against ttype.  Upon error, do one token
   insertion or deletion if possible.  You can override to not recover
@@ -1098,8 +1122,7 @@
   exception catch (at the end of the method) by just throwing
   MismatchedTokenException upon input.LA(1)!=ttype."
   (cond 
-
-   ((eql (a3el-parser-input-LA 1) ttype)
+   ((= (a3el-parser-input-LA 1) ttype)
     (progn
       (a3el-parser-input-consume)
       (setf (a3el-parser-context-error-recovery context) nil)
@@ -1111,10 +1134,10 @@
    (t (a3el-parser-mismatch ttype follow))))
 
 
-(defun a3el-parser-match-any ()
-  (setf (a3el-parser-context-error-recovery context) nil)
-  (setf (a3el-parser-context-failed context) nil)
-  (a3el-parser-input-consume))
+`(defmacro a3el-parser-match-any ()
+   (setf (a3el-parser-context-error-recovery context) nil)
+   (setf (a3el-parser-context-failed context) nil)
+   (a3el-parser-input-consume))
 
 
 (defun a3el-parser-mismatch (ttype follow)
@@ -1153,31 +1176,6 @@
   (signal error-type nil)
   )
 
-
-(defun a3el-parser-input-consume ()
-  "Move the input pointer to the next incoming token.  The stream
-   must become active with LT(1) available.  consume() simply
-   moves the input pointer so that LT(1) points at the next
-   input symbol. Consume at least one token.
-   Walk past any token not on the channel the parser is listening to."
-  (if (< (a3el-parser-context-pos context) 
-	 (length (a3el-parser-context-token-buffer context)))
-      (progn
-	(incf (a3el-parser-context-pos context))
-	;; leave p on valid token
-	(setf (a3el-parser-context-pos context) 
-	      (a3el-parser-skip-off-token-channels (a3el-parser-context-pos context))))))
-
-
-
-(defun a3el-parser-consume-until-type (token-type)
-  "Consume tokens until one matches the given token set"
-  (let ((ttype (a3el-parser-input-LA 1)))
-    (while (and (/= ttype *a3el-token-eof-token-type*) (/= ttype token-type))
-      (a3el-parser-input-consume)
-      (setf ttype (a3el-parser-input-LA 1))
-      )
-    ))
 
 
 (defun a3el-parser-consume-until-in-set (set)
@@ -1238,7 +1236,7 @@
 	 (channel (a3el-parser-context-channel context))
 	 (n (length token-buffer)))
     (while (and (< i n) (/= (a3el-common-token-channel (aref token-buffer i)) channel))
-      (incf i))
+      (setq i (+ i 1)))
     i))
 
 
@@ -1279,9 +1277,7 @@
      ))
 
 (defmacro a3el-parser-call-rule (name)
-  `(progn 
-     ;;(message (concat "calling rule " (format "%s" ',name))) 
-     (funcall (gethash ',name (a3el-parser-rules (a3el-parser-context-parser context))) context)))
+  `(funcall (gethash ',name (a3el-parser-rules (a3el-parser-context-parser context))) context))
 
 (defmacro a3el-parser-call-synpred (synpred-rule-name)
   `(progn

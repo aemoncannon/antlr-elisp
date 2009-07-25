@@ -75,6 +75,7 @@ lexer(grammar, name, tokens, scopes, rules, numRules, labelType="Token",
     (let* (
     	(current-buffer (a3el-lexer-context-input context))
     	(current-lexer (a3el-lexer-context-lexer context))
+
 	(rule-func (gethash name (a3el-lexer-rules current-lexer)))
         <tokens:{(<it.name> <it.type>)}; separator="\n">
        )
