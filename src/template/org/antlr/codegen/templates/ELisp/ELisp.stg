@@ -34,7 +34,7 @@ javaTypeInitMap ::= [
     "long":"0",
     "float":"0.0",
     "double":"0.0",
-    "boolean":"false",
+    "boolean":"nil",
     "byte":"0",
     "short":"0",
     "char":"0",
