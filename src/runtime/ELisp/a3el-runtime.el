@@ -1072,21 +1072,21 @@
   `(a3el-common-token-type (a3el-parser-input-LT ,k)))
 
 
-(defun a3el-parser-input-LB (k)
+(defmacro a3el-parser-input-LB (k)
   "Look backwards k tokens on-channel tokens"
-  (catch 'return
-    (if (= (a3el-parser-context-pos context) -1) (a3el-parser-fill-buffer))
-    (if (= k 0) (throw 'return nil))
-    (if (< (- (a3el-parser-context-pos context) k) 0) (throw 'return nil))
-    (let ((i (a3el-parser-context-pos context))
-	  (n 1))
-      ;;find k good tokens looking backwards
-      (while (<= n k)
-	;;skip off-channel tokens
-	(setq i (a3el-parser-skip-off-token-channels-reverse (- i 1)))
-	(incf n))
-      (if (< i 0) (throw 'return nil))
-      (aref (a3el-parser-context-token-buffer context) i))))
+  `(catch 'return
+     (if (= (a3el-parser-context-pos context) -1) (a3el-parser-fill-buffer))
+     (if (= ,k 0) (throw 'return nil))
+     (if (< (- (a3el-parser-context-pos context) ,k) 0) (throw 'return nil))
+     (let ((i (a3el-parser-context-pos context))
+	   (n 1))
+       ;;find k good tokens looking backwards
+       (while (<= n ,k)
+	 ;;skip off-channel tokens
+	 (setq i (a3el-parser-skip-off-token-channels-reverse (- i 1)))
+	 (incf n))
+       (if (< i 0) (throw 'return nil))
+       (aref (a3el-parser-context-token-buffer context) i))))
 
 
 (defmacro a3el-parser-input-consume ()

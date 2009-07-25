@@ -17,6 +17,7 @@ stylesheet
         (WS|CDO|CDC)* (importCSS (WS|CDO|CDC)* )*
         ((ruleset | media | page) (WS|CDO|CDC)* )*
 		EOF
+    -> ^(STYLESHEET ruleset*)
   ;
 
 ruleset
@@ -24,6 +25,7 @@ ruleset
     LBRACE 
         declaration? (SEMI declaration)* SEMI? 
     RBRACE
+    -> ^(RULE_SET selector+ LBRACE declaration* RBRACE)
   ;
 
 importCSS
@@ -60,6 +62,7 @@ combinator
 
 selector
   : simpleSelector (combinator simpleSelector)*
+    -> ^(SELECTOR simpleSelector+)
   ;
   
 simpleSelector
@@ -88,10 +91,11 @@ prio
 	
 declaration
   : IDENT  ':'	expr prio?
+        -> ^(DECLARATION IDENT ':' expr)
   ;
 
 expr
-  :  term (operator term)*
+  :  term (operator term)*  -> ^(VALUE_LIST term+)
   ;
   
 term
@@ -109,6 +113,7 @@ function
 
 color
     : HASH
+        -> ^(COLOR HASH)
     ;
         
 element_name

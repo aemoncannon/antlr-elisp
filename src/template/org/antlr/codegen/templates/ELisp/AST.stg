@@ -280,7 +280,7 @@ rewriteCode(
 ;; token list labels: <referencedTokenListLabels; separator=", ">
 ;; rule list labels: <referencedRuleListLabels; separator=", ">
 
-<if(backtracking)>(if (= (a3el-parser-context-backtracking 0)) <endif>
+<if(backtracking)>(if (= (a3el-parser-context-backtracking context) 0) <endif>
 
 (setf (a3el-retval-tree <prevRuleRootRef()>) root_0)
 <rewriteCodeLabels()>
