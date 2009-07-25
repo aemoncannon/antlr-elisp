@@ -736,22 +736,19 @@
 	(set-buffer-modified-p nil)
 	(kill-buffer buffer)))))
 
-(defun a3el-lex-emit (token)
-  (setf (a3el-lexer-context-token context) token))
 
-
-(defun a3el-lex-emit-token ()
-  (let ((token (make-a3el-common-token
-		:input (current-buffer)
-		:type (a3el-lexer-context-type context)
-		:channel (a3el-lexer-context-channel context)
-		:start (a3el-lexer-context-token-start-char-index context)
-		:stop (point)
-		:line (a3el-lexer-context-token-start-line context)
-		:text (a3el-lexer-context-text context)
-		:char-position-in-line (a3el-lexer-context-token-start-char-position-in-line context))))
-    (a3el-lex-emit token)
-    token))
+(defmacro a3el-lex-emit-token ()
+  `(let ((token (make-a3el-common-token
+		 :input (current-buffer)
+		 :type (a3el-lexer-context-type context)
+		 :channel (a3el-lexer-context-channel context)
+		 :start (a3el-lexer-context-token-start-char-index context)
+		 :stop (point)
+		 :line (a3el-lexer-context-token-start-line context)
+		 :text (a3el-lexer-context-text context)
+		 :char-position-in-line (a3el-lexer-context-token-start-char-position-in-line context))))
+     (setf (a3el-lexer-context-token context) token)
+     token))
 
 (defun a3el-lexer-for-buffer (lexer-name buffer start end)
   (let* ((current-lexer (gethash lexer-name *a3el-runtime-lexers*))
@@ -800,6 +797,38 @@
 	     (a3el-lexer-report-error re)
 	     (a3el-lexer-recover re)
 	     )))))))
+
+(defmacro a3el-lexer-each-buffer-token (token-sym body)
+  "Execute body with token-sym bound to each token in the buffer in sequence.
+   We assume context is bound to an active lexer context."
+  `(let ((lexer-entry-func (a3el-lexer-entry-func (a3el-lexer-context-lexer context))))
+     (save-excursion
+       (with-current-buffer (a3el-lexer-context-input context)
+	 (catch 'at-end
+	   (while t
+	     (setf (a3el-lexer-context-token context) nil
+		   (a3el-lexer-context-channel context) *a3el-token-default-channel*
+		   (a3el-lexer-context-token-start-char-index context) (point)
+		   (a3el-lexer-context-token-start-char-position-in-line context) (current-column)
+		   (a3el-lexer-context-token-start-line context) (line-number-at-pos)
+		   (a3el-lexer-context-text context) nil)
+	     (when (= (point) (point-max))(throw 'at-end nil))
+	     (condition-case re
+		 (progn
+		   (funcall lexer-entry-func context 'Tokens)
+		   (when (null (a3el-lexer-context-token context))
+		     (a3el-lex-emit-token))
+		   (unless (eq (a3el-lexer-context-token context) *a3el-token-skip-token*)
+		     (let ((,token-sym (a3el-lexer-context-token context)))
+		       ,body
+		       )
+		     ))
+	       (a3el-re-error
+		(a3el-lexer-report-error re)
+		(a3el-lexer-recover re)
+		)))
+	   )))))
+
 
 (defmacro a3el-lexer-call-synpred (synpred-rule-name)
   `(progn
@@ -1029,14 +1058,15 @@
     (if (= (a3el-parser-context-pos context) -1) (a3el-parser-fill-buffer))
     (if (= k 0) (throw 'return nil))
     (if (< k 0) (throw 'return (a3el-parser-input-LB (- k))))
-    (if (>= (+ (a3el-parser-context-pos context) k (- 1)) (length (a3el-parser-context-token-buffer context)))
+    (if (>= (+ (a3el-parser-context-pos context) k -1)
+	    (length (a3el-parser-context-token-buffer context)))
 	(throw 'return *a3el-token-eof-token*))
     (let ((i (a3el-parser-context-pos context))
 	  (n 1))
       (while (< n k)
 	;;skip off-channel tokens
 	(setq i (a3el-parser-skip-off-token-channels (+ i 1)))
-	(incf n))
+	(setq n (+ n 1)))
       (let ((token-buffer (a3el-parser-context-token-buffer context)))
 	(if (>= i (length token-buffer))
 	    (throw 'return *a3el-token-eof-token*))
@@ -1164,40 +1194,41 @@
   "Load all tokens from the token source and put in token-buffer.
    This is done upon first LT request because you might want to
    set some token type / channel overrides before filling buffer."
-  (let* ((lexer-context (a3el-parser-context-input context))
-	 (index 0)
+  (let* ((index 0)
 	 (tokens nil))
-    (a3el-lex-with-lexer 
-     lexer-context 
-     #'(lambda (token) 
-	 (if (and token (/= (a3el-common-token-type token) *a3el-token-eof-token-type*))
-	     (let ((discard nil))
-	       ;;// is there a channel override for token type?
-	       ;;if ( channelOverrideMap!=null ) {
-	       ;;	Integer channelI = (Integer)
-	       ;;		channelOverrideMap.get(new Integer(t.getType()));
-	       ;;	if ( channelI!=null ) {
-	       ;;		t.setChannel(channelI.intValue());
-	       ;;	}
-	       ;;}
-	       ;;if ( discardSet!=null &&
-	       ;;	 discardSet.contains(new Integer(t.getType())) )
-	       ;;{
-	       ;;	discard = true;
-	       ;;}
-	       ;;else if ( discardOffChannelTokens && t.getChannel()!=this.channel ) {
-	       ;;	discard = true;
-	       ;;}
-	       (if (not discard)
-		   (progn
-		     (setf (a3el-common-token-index token) index)
-		     (setf tokens (cons token tokens)) ;;TODO This should be more efficient.
-		     (incf index)))
-	       ))))
-    (setf (a3el-parser-context-token-buffer context) (vconcat (reverse tokens)))
+
+    ;; Setup the lexer's dynamic environment
+    (let* ((context (a3el-parser-context-input context)))
+		      
+      (a3el-lexer-each-buffer-token 
+       token
+       (if (and token (/= (a3el-common-token-type token) *a3el-token-eof-token-type*))
+	   (let ((discard nil))
+	     ;;// is there a channel override for token type?
+	     ;;if ( channelOverrideMap!=null ) {
+	     ;;	Integer channelI = (Integer)
+	     ;;		channelOverrideMap.get(new Integer(t.getType()));
+	     ;;	if ( channelI!=null ) {
+	     ;;		t.setChannel(channelI.intValue());
+	     ;;	}
+	     ;;}
+	     ;;if ( discardSet!=null &&
+	     ;;	 discardSet.contains(new Integer(t.getType())) )
+	     ;;{
+	     ;;	discard = true;
+	     ;;}
+	     ;;else if ( discardOffChannelTokens && t.getChannel()!=this.channel ) {
+	     ;;	discard = true;
+	     ;;}
+	     (if (not discard)
+		 (progn
+		   (setf (a3el-common-token-index token) index)
+		   (setq tokens (cons token tokens)) ;;TODO This should be more efficient.
+		   (incf index)))))))
+
+    (setf (a3el-parser-context-token-buffer context) (vconcat (nreverse tokens)))
     (setf (a3el-parser-context-pos context) 0)
     (setf (a3el-parser-context-pos context) (a3el-parser-skip-off-token-channels 0))
-
     ))
 
 
