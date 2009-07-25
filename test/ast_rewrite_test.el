@@ -28,6 +28,8 @@
 	(assert-tree-match '("EXPR" ("SUM" ("GEESE" ("GOOSE") ("GOOSE")))) tree)
 	)
 
+
+      ;; Demonstrates rewriting a "FROG" many times into the resulting AST
       (let* ((src "2 + FROG[1,32,7]")
 	     (result (do-parse 'full_calc_ast_rewrite_elispLexer 'full_calc_ast_rewrite_elispParser 'evaluate src))
 	     (tree (a3el-retval-tree result)))
@@ -37,6 +39,8 @@
 						  ("FROG" ("7"))))) tree)
 	)
 
+
+      ;; Demonstrates rewriting a toad many times into the resulting AST
       (let* ((src "2 + jack[1,32,7]")
 	     (result (do-parse 'full_calc_ast_rewrite_elispLexer 'full_calc_ast_rewrite_elispParser 'evaluate src))
 	     (tree (a3el-retval-tree result)))
