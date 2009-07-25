@@ -351,7 +351,7 @@ rewritePositiveClosureBlock(
 	description) ::=
 <<
 (if (not (or <referencedElements:{el | (a3el-rewrite-stream-has-next stream_<el>) }; separator=" ">))
-    (signal 'a3el-rewrite-early-exit-error)
+    (signal 'a3el-rewrite-early-exit-error nil)
 )
 (while (or <referencedElements:{el | (a3el-rewrite-stream-has-next stream_<el>) }; separator=" "> )
     <alt>
