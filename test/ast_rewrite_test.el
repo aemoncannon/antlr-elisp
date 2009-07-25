@@ -7,25 +7,43 @@
       (let* ((src "42")
 	     (result (do-parse 'full_calc_ast_rewrite_elispLexer 'full_calc_ast_rewrite_elispParser 'evaluate src))
 	     (tree (a3el-retval-tree result)))
-	(assert-tree-match '("EXPR" ("FOO" ("42"))) tree)
+	(assert-tree-match '("EXPR" ("SUM" ("42"))) tree)
 	)
 
       (let* ((src "1 + 2 + 3 + 4")
 	     (result (do-parse 'full_calc_ast_rewrite_elispLexer 'full_calc_ast_rewrite_elispParser 'evaluate src))
 	     (tree (a3el-retval-tree result)))
-	(assert-tree-match '("EXPR" ("FOO" ("1") ("2") ("3") ("4"))) tree)
+	(assert-tree-match '("EXPR" ("SUM" ("1") ("2") ("3") ("4"))) tree)
 	)
 
       (let* ((src "ln 42")
 	     (result (do-parse 'full_calc_ast_rewrite_elispLexer 'full_calc_ast_rewrite_elispParser 'evaluate src))
 	     (tree (a3el-retval-tree result)))
-	(assert-tree-match '("EXPR" ("FOO" ("NATURAL_LOG" ("42")))) tree)
+	(assert-tree-match '("EXPR" ("SUM" ("NATURAL_LOG" ("42")))) tree)
 	)
 
       (let* ((src "GOOSE")
 	     (result (do-parse 'full_calc_ast_rewrite_elispLexer 'full_calc_ast_rewrite_elispParser 'evaluate src))
 	     (tree (a3el-retval-tree result)))
-	(assert-tree-match '("EXPR" ("FOO" ("GEESE" ("GOOSE") ("GOOSE")))) tree)
+	(assert-tree-match '("EXPR" ("SUM" ("GEESE" ("GOOSE") ("GOOSE")))) tree)
+	)
+
+      (let* ((src "2 + FROG[1,32,7]")
+	     (result (do-parse 'full_calc_ast_rewrite_elispLexer 'full_calc_ast_rewrite_elispParser 'evaluate src))
+	     (tree (a3el-retval-tree result)))
+	(assert-tree-match '("EXPR" ("SUM" ("2") ("FROG_LIST" 
+						  ("FROG" ("1")) 
+						  ("FROG" ("32")) 
+						  ("FROG" ("7"))))) tree)
+	)
+
+      (let* ((src "2 + jack[1,32,7]")
+	     (result (do-parse 'full_calc_ast_rewrite_elispLexer 'full_calc_ast_rewrite_elispParser 'evaluate src))
+	     (tree (a3el-retval-tree result)))
+	(assert-tree-match '("EXPR" ("SUM" ("2") ("TOAD_LIST" 
+						  ("ENTRY" ("TOAD" ("jack")) ("1")) 
+						  ("ENTRY" ("TOAD" ("jack")) ("32"))
+						  ("ENTRY" ("TOAD" ("jack")) ("7")) ))) tree)
 	)
 
 

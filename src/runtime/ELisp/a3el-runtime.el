@@ -216,7 +216,8 @@
 	(signal 'a3el-rewrite-empty-stream-error (a3el-rewrite-stream-element-description s)))
     (if (>= cursor n) ;;out of elements?
 	(if (= n 1)   ;; if size is 1, it's ok; return and we'll dup
-	    (a3el-rewrite-stream-to-tree s (nth 0 (a3el-rewrite-stream-elements s)))
+	    (progn
+	      (a3el-rewrite-stream-to-tree s (nth 0 (a3el-rewrite-stream-elements s))))
 	  (signal 'a3el-rewrite-cardinality-error (a3el-rewrite-stream-element-description s)))
       (progn
 	(let ((o (a3el-rewrite-stream-to-tree 
@@ -266,7 +267,7 @@
    around it.  For trees, you must call the adaptor.dupTree() unless
    the element is for a tree root; then it must be a node dup."
   (if (a3el-rewrite-token-stream-p s)
-      (signal 'error "dup can't be called for a token stream")
+      (signal 'error "Dup can't be called for a token stream")
     (funcall (a3el-tree-adaptor-dup-tree
 	      (a3el-rewrite-stream-adaptor s)) el)))
 
@@ -285,6 +286,33 @@
   (token nil)
   (is-nil nil)
   (children '()))
+
+
+(defun a3el-common-tree-dup-node (tree)
+  "Duplicate a tree, see adaptor for further specification."
+  (make-a3el-common-tree :is-nil (a3el-common-tree-is-nil tree)
+			 :token (a3el-common-tree-token tree)))
+
+
+(defun a3el-common-tree-dup-tree (tree)
+  "Duplicate a tree, see adaptor for further specification."
+  (let ((new-tree
+	 (a3el-common-tree-dup-node tree)))
+    (dolist (ea (a3el-common-tree-children tree))
+      (a3el-common-tree-add-child new-tree 
+				  (a3el-common-tree-dup-tree ea)))
+    new-tree))
+
+(defun a3el-common-tree-add-child (p c)
+  "Add child to tree, see adaptor for further specification."
+  (if (and p c)
+      (if (a3el-common-tree-is-nil c)
+	  (setf (a3el-common-tree-children p)
+		(append (a3el-common-tree-children p)
+			(a3el-common-tree-children c)))
+	(setf (a3el-common-tree-children p)
+	      (append (a3el-common-tree-children p)
+		      (list c))))))
 
 
 (defstruct a3el-tree-adaptor
@@ -325,22 +353,15 @@
    #'(lambda () 
        (make-a3el-common-tree :is-nil t)))
 
+
   ;; Add a child to the tree t.  If child is a flat tree (a list), make all
   ;; in list children of t.  Warning: if t has no children, but child does
   ;; and child isNil then you can decide it is ok to move children to t via
   ;; t.children = child.children; i.e., without copying the array.  Just
   ;; make sure that this is consistent with have the user will build
   ;; ASTs. Do nothing if t or child is null.
-  (add-child
-   #'(lambda (p c)
-       (if (and p c)
-	   (if (a3el-common-tree-is-nil c)
-	       (setf (a3el-common-tree-children p)
-		     (append (a3el-common-tree-children p)
-			     (a3el-common-tree-children c)))
-	     (setf (a3el-common-tree-children p)
-		   (append (a3el-common-tree-children p)
-			   (list c)))))))
+  (add-child #'a3el-common-tree-add-child)
+
 
 
   ;; If oldRoot is a nil root, just copy or move the children to newRoot.
@@ -390,12 +411,11 @@
 
 
   ;; Duplicate tree recursively, using dup-node for each node
-  (dup-tree
-   #'(lambda (tree) tree))
+  (dup-tree #'a3el-common-tree-dup-tree)
+
 
   ;;Duplicate a single tree node
-  (dup-node
-   #'(lambda (node) node))
+  (dup-node #'a3el-common-tree-dup-node)
 
         
   ;; Given the root of the subtree created for this rule, post process

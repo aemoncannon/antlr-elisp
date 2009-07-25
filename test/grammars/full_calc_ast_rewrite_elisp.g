@@ -7,14 +7,18 @@ options {
 tokens {
     EXPR;
     NATURAL_LOG;
-    FOO;
+    SUM;
     GEESE;
+    FROG_LIST;
+    TOAD_LIST;
+    ENTRY;
+    TOAD;
 }
 
 evaluate : expression EOF -> ^(EXPR expression);
 
 expression : 
-    mult ('+' mult | '-' mult )* -> ^(FOO mult*);
+    mult ('+' mult )* -> ^(SUM mult*);
 
 mult : 
     log ('*'^ log | '/'^ log | '%'^ log )*
@@ -34,8 +38,13 @@ atom :
   | 'PI'
   | 'E'
   | GOOSE -> ^(GEESE GOOSE GOOSE)
+  | FROG '[' atom (',' atom)* ']' -> ^(FROG_LIST ^(FROG atom)+)
+  | toad '[' atom (',' atom)* ']' -> ^(TOAD_LIST ^(ENTRY toad atom)+)
   ;
 
+toad : 'jack' -> ^(TOAD 'jack');
+
+FROG: 'FROG';
 GOOSE: 'GOOSE';
 
 INTEGER: DIGIT+;
