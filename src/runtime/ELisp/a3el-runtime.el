@@ -290,8 +290,9 @@
 
 (defun a3el-common-tree-dup-node (tree)
   "Duplicate a tree, see adaptor for further specification."
-  (make-a3el-common-tree :is-nil (a3el-common-tree-is-nil tree)
-			 :token (a3el-common-tree-token tree)))
+  (if tree
+      (make-a3el-common-tree :is-nil (a3el-common-tree-is-nil tree)
+			     :token (a3el-common-tree-token tree))))
 
 
 (defun a3el-common-tree-dup-tree (tree)
@@ -359,9 +360,31 @@
   ;; and child isNil then you can decide it is ok to move children to t via
   ;; t.children = child.children; i.e., without copying the array.  Just
   ;; make sure that this is consistent with have the user will build
-  ;; ASTs. Do nothing if t or child is null.
+  ;; ASTs. 
+  ;; Do nothing if t or child is null.
   (add-child #'a3el-common-tree-add-child)
 
+
+  ;; Return the i'th child of tree.
+  (get-child 
+   #'(lambda (t i) 
+       (if t
+	   (nth i (a3el-common-tree-children t)))))
+
+
+  ;; Return the count of tree's chidren.
+  (get-child 
+   #'(lambda (t) 
+       (if t
+	   (length (a3el-common-tree-children t))
+	 0)))
+
+
+  ;; Return tree's text. Returns the text of the common-tree's token.
+  (get-text
+   #'(lambda (t)
+       (if t
+	   (a3el-common-token-get-text (a3el-common-tree-token t)))))
 
 
   ;; If oldRoot is a nil root, just copy or move the children to newRoot.
