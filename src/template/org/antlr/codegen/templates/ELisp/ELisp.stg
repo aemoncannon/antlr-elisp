@@ -47,7 +47,7 @@ javaTypeInitMap ::= [
 outputFile(LEXER,PARSER,TREE_PARSER, actionScope, actions,
            docComment, recognizer,
            name, tokens, tokenNames, rules, cyclicDFAs,
-	   bitsets, buildTemplate, buildAST, rewrite, profile,
+	   bitsets, buildTemplate, buildAST, rewriteMode, profile,
 	   backtracking, synpreds, memoize, numRules,
 	   fileName, ANTLRVersion, generatedTimestamp, trace,
 	   scopes, superClass, literals) ::=
@@ -65,7 +65,7 @@ outputFile(LEXER,PARSER,TREE_PARSER, actionScope, actions,
 >>
 
 lexer(grammar, name, tokens, scopes, rules, numRules, labelType="Token",
-      filterMode) ::= <<
+      filterMode, superClass="nil") ::= <<
  (a3el-deflexer <name>)
 
  (a3el-with-lexer <name>
@@ -85,6 +85,8 @@ lexer(grammar, name, tokens, scopes, rules, numRules, labelType="Token",
   <scopes:{<if(it.isDynamicGlobalScope)><globalAttributeScope(scope=it)><endif>}>
   <actions.lexer.members>
 
+   ;; FIXME Add all the delegate stuff
+
   <if(filterMode)>
   <filteringNextToken()>
   <endif>
@@ -97,20 +99,27 @@ lexer(grammar, name, tokens, scopes, rules, numRules, labelType="Token",
 )
 >>
 
+
+/** A override of Lexer.nextToken() that backtracks over mTokens() looking
+ *  for matches.  No error can be generated upon error; just rewind, consume
+ *  a token and then try again.  backtracking needs to be set as well.
+ *  Make rule memoization happen only at levels above 1 as we start mTokens
+ *  at backtracking==1.
+ */
 filteringNextToken() ::= <<
 ;; FIXME(nextToken)
-
 ;; FIXME(memoize)
-
 ;; FIXME(alreadyParsedRule)
 >>
 
-filteringActionGate() ::= ";; FIXME(filteringActionGate)"
+actionGate() ::= "(setf (a3el-parser-context-backtracking context) 0)"
+
+filteringActionGate() ::= "(setf (a3el-parser-context-backtracking context) 1)"
 
 /** How to generate a parser */
 genericParser(grammar, name, scopes, tokens, tokenNames, rules, numRules,
               bitsets, inputStreamType, superClass,
-              ASTLabelType="Object", labelType, members) ::= <<
+              ASTLabelType="Object", labelType, members, rewriteElementType, filterMode) ::= <<
 
   (a3el-defparser <name>)
 
@@ -128,6 +137,7 @@ genericParser(grammar, name, scopes, tokens, tokenNames, rules, numRules,
     	(adaptor (a3el-parser-tree-adaptor current-parser))
     	(adaptor-new-nil (a3el-tree-adaptor-new-nil adaptor))
     	(adaptor-create (a3el-tree-adaptor-create adaptor))
+    	(adaptor-error-node (a3el-tree-adaptor-error-node adaptor))
     	(adaptor-add-child (a3el-tree-adaptor-add-child adaptor))
     	(adaptor-become-root (a3el-tree-adaptor-become-root adaptor))
     	(adaptor-rule-post-processing (a3el-tree-adaptor-rule-post-processing adaptor))
@@ -145,6 +155,9 @@ genericParser(grammar, name, scopes, tokens, tokenNames, rules, numRules,
     (a3el-parser-init-token-names "\<invalid>" "\<EOR>" "\<DOWN>" "\<UP>" <tokenNames; separator=" ">)
 
     <tokens:{(a3el-deftoken <it.name> <it.type>)}; separator="\n">
+
+    ;; FIXME Delegates stuff
+
 
     <scopes:{<if(it.isDynamicGlobalScope)><globalAttributeScope(scope=it)><endif>}; separator="\n">
 
@@ -169,15 +182,19 @@ genericParser(grammar, name, scopes, tokens, tokenNames, rules, numRules,
 )
 >>
 
-parser(grammar, name, scopes, tokens, tokenNames, rules, numRules, bitsets, ASTLabelType, superClass="Parser", labelType="Token", members={<actions.parser.members>}) ::= <<
-<genericParser(inputStreamType="TokenStream", ...)>
+parserCtorBody() ::= <<
+;; FIXME Setup delegates and rule memoization
+>>
+
+parser(grammar, name, scopes, tokens, tokenNames, rules, numRules, bitsets, ASTLabelType, superClass="nil", labelType="Token", members={<actions.parser.members>}) ::= <<
+<genericParser(inputStreamType="TokenStream",rewriteElementType="Token", ...)>
 >>
 
 /** How to generate a tree parser; same as parser except the input
  *  stream is a different type.
  */
-treeParser(grammar, name, scopes, tokens, tokenNames, globalAction, rules, numRules, bitsets, labelType={<ASTLabelType>}, ASTLabelType="Object", superClass="TreeParser", members={<actions.treeparser.members>}) ::= <<
-<genericParser(inputStreamType="TreeNodeStream", ...)>
+treeParser(grammar, name, scopes, tokens, tokenNames, globalAction, rules, numRules, bitsets, labelType={<ASTLabelType>}, ASTLabelType="Object", superClass="TreeParser", members={<actions.treeparser.members>}, filterMode) ::= <<
+<genericParser(inputStreamType="TreeNodeStream", rewriteElementType="Token", ...)>
 >>
 
 /** A simpler version of a rule template that is specific to the imaginary
@@ -298,6 +315,7 @@ rule(ruleName,ruleDescriptor,block,emptyRule,description,exceptions,finally,memo
       (a3el-parser-report-error re)<\n>
       (a3el-parser-recover re)<\n>
     <endif>
+	<@setErrorReturnValue()>
     ))
 <endif>
 <endif>
@@ -557,12 +575,17 @@ altSwitchCase() ::= <<
 >>
 
 /** An alternative is just a list of elements; at outermost level */
-alt(elements,altNum,description,autoAST,outerAlt) ::= <<
+alt(elements,altNum,description,autoAST,outerAlt,treeLevel, rew) ::= <<
 ;; <fileName>:<description>
 <@declarations()>
 <elements:element()>
 <@cleanup()>
 >>
+
+/** What to emit when there is no rewrite.  For auto build
+ *  mode, does nothing.
+ */
+noRewrite(rewriteBlockLevel, treeLevel) ::= ""
 
 // E L E M E N T S
 
@@ -573,7 +596,7 @@ element() ::= <<
 >>
 
 /** match a token optionally with a label in front */
-tokenRef(token,label,elementIndex) ::= <<
+tokenRef(token,label,elementIndex, hetero) ::= <<
 <if(label)>
 (setq <label> (a3el-parser-input-LT 1))<\n>
 <endif>
@@ -582,7 +605,7 @@ tokenRef(token,label,elementIndex) ::= <<
 >>
 
 /** ids+=ID */
-tokenRefAndListLabel(token,label,elementIndex) ::= <<
+tokenRefAndListLabel(token,label,elementIndex, hetero) ::= <<
 <tokenRef(...)>
 <listLabel(elem=label,...)>
 >>
@@ -657,6 +680,8 @@ matchSet(s,label,elementIndex,postmatchCode="") ::= <<
 )
 >>
 
+matchRuleBlockSet ::= matchSet
+
 matchSetAndListLabel(s,label,elementIndex,postmatchCode) ::= <<
 <matchSet(...)>
 <listLabel(elem=label,...)>
@@ -713,7 +738,7 @@ wildcardCharListLabel(label, elementIndex) ::= <<
 /** Match a rule reference by invoking it possibly with arguments
  *  and a return value or values.
  */
-ruleRef(rule,label,elementIndex,args) ::= <<
+ruleRef(rule,label,elementIndex,args, scope) ::= <<
 (a3el-parser-push-follow FOLLOW_<rule>_in_<ruleName><elementIndex>)
 <if(label)>
 (setq <label> (a3el-parser-call-rule <rule> <args; separator=" ">))<\n>
@@ -725,24 +750,24 @@ ruleRef(rule,label,elementIndex,args) ::= <<
 >>
 
 /** ids+=r */
-ruleRefAndListLabel(rule,label,elementIndex,args) ::= <<
+ruleRefAndListLabel(rule,label,elementIndex,args,scope) ::= <<
 <ruleRef(...)>
 <listLabel(elem=label,...)>
 >>
 
 /** A lexer rule reference */
-lexerRuleRef(rule,label,args,elementIndex) ::= <<
+lexerRuleRef(rule,label,args,elementIndex,scope) ::= <<
 <if(label)>
 int <label>Start<elementIndex> = getCharIndex();
-(a3el-lexer-call-rule <rule> <args; separator=" ">) <checkRuleBacktrackFailure()>
+(a3el-lexer-call-rule <rule.name> <args; separator=" ">) <checkRuleBacktrackFailure()>
 <label> = new CommonToken(input, Token.INVALID_TOKEN_TYPE, Token.DEFAULT_CHANNEL, <label>Start<elementIndex>, getCharIndex()-1);
 <else>
-(a3el-lexer-call-rule <rule> <args; separator=" ">) <checkRuleBacktrackFailure()>
+(a3el-lexer-call-rule <rule.name> <args; separator=" ">) <checkRuleBacktrackFailure()>
 <endif>
 >>
 
 /** i+=INT in lexer */
-lexerRuleRefAndListLabel(rule,label,args,elementIndex) ::= <<
+lexerRuleRefAndListLabel(rule,label,args,elementIndex,scope) ::= <<
 <lexerRuleRef(...)>
 <listLabel(elem=label,...)>
 >>
@@ -760,7 +785,7 @@ lexerMatchEOF(label,elementIndex) ::= <<
 >>
 
 /** match ^(root children) in tree parser */
-tree(root, actionsAfterRoot, children, nullableChildList) ::= <<
+tree(root, actionsAfterRoot, children, nullableChildList, enclosingTreeLevel, treeLevel) ::= <<
 <root:element()>
 <actionsAfterRoot:element()>
 <if(nullableChildList)>
@@ -1137,6 +1162,11 @@ ruleLabelType(referencedRule) ::= <<
 void
 <endif>
 <endif>
+>>
+
+delegateName() ::= <<
+;; FiXME delegate stuff
+;;<if(it.label)><it.label><else>g<it.name><endif>
 >>
 
 /** Using a type to init value map, try to init a type; if not in table

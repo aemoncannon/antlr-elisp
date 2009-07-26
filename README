@@ -1,0 +1,10 @@
+
+
+
+Notes for elisp target:
+
+* See antlr revision 3922. We're skipping unique ids for tree nodes. Need to go back and figure out why these are necessary. 
+
+* antlr rev 3994. 
+  Skipping shared recognizer state changes. 
+  Skipping tree adaptor impl changes -- we just don't need it.

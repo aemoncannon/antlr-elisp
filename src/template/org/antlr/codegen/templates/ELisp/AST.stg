@@ -25,11 +25,12 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-
 group AST;
 
 @outputFile.imports() ::= <<
 <@super.imports()>
+<if(!TREE_PARSER)><! tree parser would already have imported !>
+<endif>
 >>
 
 @genericParser.members() ::= <<
@@ -39,7 +40,6 @@ group AST;
 
 /** Add an adaptor property that knows how to build trees */
 parserMembers() ::= <<
-;; We don't need this.
 >>
 
 
@@ -48,6 +48,7 @@ ruleDeclarations() ::= <<
 <super.ruleDeclarations()>
 (root_0 nil)<\n>
 >>
+
 
 ruleLabelDefs() ::= <<
 <super.ruleLabelDefs()>
@@ -59,19 +60,6 @@ ruleLabelDefs() ::= <<
     :{(stream_<it> (make-a3el-rewrite-subtree-stream :adaptor adaptor :element-description "rule <it>")) }; separator="\n">
 >>
 
-ruleCleanUp() ::= <<
-<super.ruleCleanUp()>
-<if(ruleDescriptor.hasMultipleReturnValues)>
-<if(backtracking)>
-(if (= (a3el-parser-context-backtracking context) 0)<\n>
-<endif>
-(setf (a3el-retval-tree retval) (funcall adaptor-rule-post-processing root_0))
-(funcall adaptor-set-token-boundaries (a3el-retval-tree retval) (a3el-retval-start retval) (a3el-retval-stop retval))
-<if(backtracking)>
-)
-<endif>
-<endif>
->>
 
 /** When doing auto AST construction, we must define some variables;
  *  These should be turned off if doing rewrites.  This must be a "mode"
@@ -86,180 +74,66 @@ ruleCleanUp() ::= <<
 <endif>
 >>
 
-// TOKEN AST STUFF
 
-/** ID and output=AST */
-tokenRef(token,label,elementIndex) ::= <<
-<super.tokenRef(...)>
-<if(backtracking)>(if (= (a3el-parser-context-backtracking context) 0)<endif>
-(progn
-(setq <label>_tree (funcall adaptor-create <label>))
-(funcall adaptor-add-child root_0 <label>_tree))
+// T r a c k i n g  R u l e  E l e m e n t s
+
+/** ID and track it for use in a rewrite rule */
+tokenRefTrack(token,label,elementIndex,hetero) ::= <<
+<tokenRefBang(...)> <! Track implies no auto AST construction!>
+<if(backtracking)>(if <actions.(actionScope).synpredgate> <endif>
+   (a3el-rewrite-stream-add stream_<token> <label>)<\n>
 <if(backtracking)>)<endif>
->>
-
-/** ID! and output=AST (same as plain tokenRef) */
-tokenRefBang(token,label,elementIndex) ::= "<super.tokenRef(...)>"
-
-/** ID^ and output=AST */
-tokenRefRuleRoot(token,label,elementIndex) ::= <<
-<super.tokenRef(...)>
-<if(backtracking)>(if (= (a3el-parser-context-backtracking context) 0)<endif>
-(progn
-(setq <label>_tree (funcall adaptor-create <label>))
-(setq root_0 (funcall adaptor-become-root <label>_tree root_0)))
-<if(backtracking)>)<endif>
->>
-
-/** ids+=ID! and output=AST */
-tokenRefBangAndListLabel(token,label,elementIndex) ::= <<
-<tokenRefBang(...)>
-<listLabel(elem=label,...)>
->>
-
-/** label+=TOKEN when output=AST but not rewrite alt */
-tokenRefAndListLabel(token,label,elementIndex) ::= <<
-<tokenRef(...)>
-<listLabel(elem=label,...)>
->>
-
-/** Match label+=TOKEN^ when output=AST but not rewrite alt */
-tokenRefRuleRootAndListLabel(token,label,elementIndex) ::= <<
-<tokenRefRuleRoot(...)>
-<listLabel(elem=label,...)>
->>
-
-/** ID but track it for use in a rewrite rule */
-tokenRefTrack(token,label,elementIndex) ::= <<
- <super.tokenRef(...)>
- <if(backtracking)>
- (if (= (a3el-parser-context-backtracking context) 0) 
- <endif>
- (a3el-rewrite-stream-add stream_<token> <label>)<\n>
-  <if(backtracking)>
-  )
-  <endif>
 >>
 
 /** ids+=ID and track it for use in a rewrite rule; adds to ids *and*
  *  to the tracking list stream_ID for use in the rewrite.
  */
-tokenRefTrackAndListLabel(token,label,elementIndex) ::= <<
+tokenRefTrackAndListLabel(token,label,elementIndex,hetero) ::= <<
 <tokenRefTrack(...)>
 <listLabel(elem=label,...)>
 >>
 
-// SET AST
-
-// the match set stuff is interesting in that it uses an argument list
-// to pass code to the default matchSet; another possible way to alter
-// inherited code.  I don't use the region stuff because I need to pass
-// different chunks depending on the operator.  I don't like making
-// the template name have the operator as the number of templates gets
-// large but this is the most flexible--this is as opposed to having
-// the code generator call matchSet then add root code or ruleroot code
-// plus list label plus ...  The combinations might require complicated
-// rather than just added on code.  Investigate that refactoring when
-// I have more time.
-
-matchSet(s,label,elementIndex,postmatchCode) ::= <<
-<super.matchSet(..., postmatchCode={
-		     <if(backtracking)>(if (= (a3el-parser-context-backtracking context) 0) <endif>
-		     (funcall adaptor-add-child root_0 (funcall adaptor-create <label>))
-		     <if(backtracking)>)<endif>
-})>
->>
-
-matchSetBang(s,label,elementIndex,postmatchCode) ::= "<super.matchSet(...)>"
-
-// note there is no matchSetTrack because -> rewrites force sets to be
-// plain old blocks of alts: (A|B|...|C)
-
-matchSetRuleRoot(s,label,elementIndex,debug) ::= <<
-<super.matchSet(..., postmatchCode={
-		     <if(backtracking)>(if (= (a3el-parser-context-backtracking context) 0) <endif>
-		     (setq root_0  (funcall adaptor-become-root (funcall adaptor-create <label>) root_0))
-		     <if(backtracking)>)<endif>
-})>
->>
-
-// RULE REF AST
-
-/** rule when output=AST */
-ruleRef(rule,label,elementIndex,args) ::= <<
-<super.ruleRef(...)>
-<if(backtracking)>(if (= (a3el-parser-context-backtracking context) 0) <endif>
-(funcall adaptor-add-child root_0 (a3el-retval-tree <label>))
+/** ^(ID ...) track for rewrite */
+tokenRefRuleRootTrack(token,label,elementIndex,hetero) ::= <<
+<tokenRefBang(...)>
+<if(backtracking)>(if <actions.(actionScope).synpredgate> <endif>
+   (a3el-rewrite-stream-add stream_<token> <label>)<\n>
 <if(backtracking)>)<endif>
 >>
 
-/** rule! is same as normal rule ref */
-ruleRefBang(rule,label,elementIndex,args) ::= "<super.ruleRef(...)>"
-
-/** rule^ */
-ruleRefRuleRoot(rule,label,elementIndex,args) ::= <<
-<super.ruleRef(...)>
-<if(backtracking)>(if (= (a3el-parser-context-backtracking context) 0) <endif>
-(setq root_0 (funcall adaptor-become-root (a3el-retval-tree <label>) root_0))
-<if(backtracking)>)<endif>
+/** Match ^(label+=TOKEN ...) track for rewrite */
+tokenRefRuleRootTrackAndListLabel(token,label,elementIndex,hetero) ::= <<
+<tokenRefRuleRootTrack(...)>
+<listLabel(elem=label,...)>
 >>
 
 /** rule when output=AST and tracking for rewrite */
-ruleRefTrack(rule,label,elementIndex,args) ::= <<
+ruleRefTrack(rule,label,elementIndex,args,scope) ::= <<
 <super.ruleRef(...)>
-<if(backtracking)>(if (= (a3el-parser-context-backtracking context) 0) <endif>
-(a3el-rewrite-stream-add stream_<rule> (a3el-retval-tree <label>))
+<if(backtracking)>(if <actions.(actionScope).synpredgate> <endif>
+   (a3el-rewrite-stream-add stream_<rule.name> (a3el-retval-tree <label>))<\n>
 <if(backtracking)>)<endif>
 >>
 
 /** x+=rule when output=AST and tracking for rewrite */
-ruleRefTrackAndListLabel(rule,label,elementIndex,args) ::= <<
+ruleRefTrackAndListLabel(rule,label,elementIndex,args,scope) ::= <<
 <ruleRefTrack(...)>
-<listLabel(elem=label,...)>
->>
-
-/** x+=rule when output=AST */
-ruleRefAndListLabel(rule,label,elementIndex,args) ::= <<
-<ruleRef(...)>
 <listLabel(elem="(a3el-retval-tree <label>)",...)>
 >>
 
-/** x+=rule! when output=AST is a rule ref with list addition */
-ruleRefBangAndListLabel(rule,label,elementIndex,args) ::= <<
-<ruleRefBang(...)>
-<listLabel(elem="(a3el-retval-tree <label>)",...)>
->>
-
-/** x+=rule^ */
-ruleRefRuleRootAndListLabel(rule,label,elementIndex,args) ::= <<
+/** ^(rule ...) rewrite */
+ruleRefRuleRootTrack(rule,label,elementIndex,args,scope) ::= <<
 <ruleRefRuleRoot(...)>
-<listLabel(elem="(a3el-retval-tree <label>)",...)>
->>
-
-// WILDCARD AST
-
-wildcard(label,elementIndex) ::= <<
-<super.wildcard(...)>
-<if(backtracking)>(if (= (a3el-parser-context-backtracking context) 0) <endif>
-(progn
-(setq <label>_tree (funcall adaptor-create <label>))
-(funcall adaptor-add-child root_0 <label>_tree))
+<if(backtracking)>(if <actions.(actionScope).synpredgate> <endif>
+   (a3el-rewrite-stream-add stream_<rule> (a3el-retval-tree <label>))<\n>
 <if(backtracking)>)<endif>
 >>
 
-wildcardBang(label,elementIndex) ::= "<super.wildcard(...)>"
-
-wildcardRuleRoot(label,elementIndex) ::= <<
-<super.wildcard(...)>
-<if(backtracking)>(if (= (a3el-parser-context-backtracking context) 0) <endif>
-(progn
-(setq <label>_tree (funcall adaptor-create <label>))
-(setq root_0 (funcall adaptor-become-root <label>_tree root_0)))
-<if(backtracking)>)<endif>
+/** ^(x+=rule ...) rewrite */
+ruleRefRuleRootTrackAndListLabel(rule,label,elementIndex,args,scope) ::= <<
+<ruleRefRuleRootTrack(...)>
+<listLabel(elem=label+".getTree()",...)>
 >>
-
-// TODO: ugh, am i really missing the combinations for Track and ListLabel?
-// there's got to be a better way
 
 // R e w r i t e
 
@@ -270,24 +144,47 @@ rewriteCode(
 	referencedTokenListLabels,
 	referencedRuleLabels,
 	referencedRuleListLabels,
+	referencedWildcardLabels,
+	referencedWildcardListLabels,
 	rewriteBlockLevel, enclosingTreeLevel, treeLevel) ::=
 <<
 
-;; AST REWRITE
-;; elements: <referencedElementsDeep; separator=", ">
-;; token labels: <referencedTokenLabels; separator=", ">
-;; rule labels: <referencedRuleLabels; separator=", ">
-;; token list labels: <referencedTokenListLabels; separator=", ">
-;; rule list labels: <referencedRuleListLabels; separator=", ">
-
-<if(backtracking)>(if (= (a3el-parser-context-backtracking context) 0) <endif>
-
+// AST REWRITE
+// elements: <referencedElementsDeep; separator=", ">
+// token labels: <referencedTokenLabels; separator=", ">
+// rule labels: <referencedRuleLabels; separator=", ">
+// token list labels: <referencedTokenListLabels; separator=", ">
+// rule list labels: <referencedRuleListLabels; separator=", ">
+// wildcard labels: <[referencedWildcardLabels,referencedWildcardListLabels]; separator=", ">
+<if(backtracking)>
+(if <actions.(actionScope).synpredgate> <\n>
+<endif>
 (setf (a3el-retval-tree <prevRuleRootRef()>) root_0)
 <rewriteCodeLabels()>
 (setq root_0 (funcall adaptor-new-nil))
 <alts:rewriteAlt(); separator="else ">
-
-<if(backtracking)>)<endif>
+<! if tree parser and rewrite=true !>
+<if(TREE_PARSER)>
+<if(rewriteMode)>
+(setf (a3el-retval-tree <prevRuleRootRef()>) (funcall adaptor-rule-post-processing root_0))
+;; FIXME
+;;input.replaceChildren(adaptor.getParent(retval.start),
+;;                      adaptor.getChildIndex(retval.start),
+;;                      adaptor.getChildIndex(_last),
+;;                      retval.tree);
+<endif>
+<endif>
+<! if parser or tree-parser && rewrite!=true, we need to set result !>
+<if(!TREE_PARSER)>
+(setf (a3el-retval-tree <prevRuleRootRef()>) root_0)A
+<else>
+<if(!rewriteMode)>
+(setf (a3el-retval-tree <prevRuleRootRef()>) root_0)A
+<endif>
+<endif>
+<if(backtracking)>
+)
+<endif>
 >>
 
 rewriteCodeLabels() ::= <<
@@ -303,8 +200,21 @@ rewriteCodeLabels() ::= <<
       };
     separator="\n"
 >
+
+<referencedWildcardLabels
+    :{ (setq stream_<it> (let ((s (make-a3el-rewrite-subtree-stream :adaptor adaptor :element-description "wildcard <it>")))
+       	     	     (a3el-rewrite-stream-add s <it>)))
+      };
+    separator="\n"
+>
+<referencedWildcardListLabels
+    :{ (setq stream_<it> (let ((s (make-a3el-rewrite-subtree-stream :adaptor adaptor :element-description "wildcard <it>")))
+                     (setf (a3el-rewrite-stream-elements s) list_<it>)))
+      };
+    separator="\n"
+>
 <referencedRuleLabels
-    :{ (setq stream_<it> (let ((s (make-a3el-rewrite-subtree-stream :adaptor adaptor :element-description "token <it>")))
+    :{ (setq stream_<it> (let ((s (make-a3el-rewrite-subtree-stream :adaptor adaptor :element-description "rule <it>")))
                      (a3el-rewrite-stream-add s (if (null <it>) nil (a3el-retval-tree <it>)))))
       };
     separator="\n"
@@ -315,6 +225,7 @@ rewriteCodeLabels() ::= <<
       };
     separator="\n"
 >
+
 >>
 
 /** Generate code for an optional rewrite block; note it uses the deep ref'd element
@@ -359,6 +270,8 @@ rewritePositiveClosureBlock(
 <referencedElements:{el | (a3el-rewrite-stream-reset stream_<el>) <\n>}>
 >>
 
+
+
 rewriteAlt(a) ::= <<
 ;; <a.description>
 <if(a.pred)>
@@ -369,6 +282,8 @@ rewriteAlt(a) ::= <<
     <a.alt>
 <endif>
 >>
+
+
 
 /** For empty rewrites: "r : ... -> ;" */
 rewriteEmptyAlt() ::= "(setq root_0 nil)"
@@ -390,56 +305,39 @@ rewriteElement(e) ::= <<
 >>
 
 /** Gen ID or ID[args] */
-rewriteTokenRef(token,elementIndex,args) ::= <<
-(funcall adaptor-add-child root_<treeLevel> 
-	 <if(args)>(funcall adaptor-create <token> <args; separator=" ">)
-	 <else>
-	 (a3el-rewrite-stream-next stream_<token>)
-	 <endif>
-)<\n>
+rewriteTokenRef(token,elementIndex,hetero,args) ::= <<
+(funcall adaptor-add-child root_<treeLevel> <createRewriteNodeFromElement(...)>)<\n>
 >>
 
 /** Gen $label ... where defined via label=ID */
 rewriteTokenLabelRef(label,elementIndex) ::= <<
-(funcall adaptor-add-child root_<treeLevel> (a3el-rewrite-stream-next stream_<label>))<\n>
+(funcall adaptor-add-child root_<treeLevel> (a3el-rewrite-stream-next-node stream_<label>))<\n>
 >>
 
 /** Gen $label ... where defined via label+=ID */
 rewriteTokenListLabelRef(label,elementIndex) ::= <<
-(funcall adaptor-add-child root_<treeLevel> (a3el-rewrite-stream-next stream_<label>))<\n>
+(funcall adaptor-add-child root_<treeLevel> (a3el-rewrite-stream-next-node stream_<label>))<\n>
 >>
 
 /** Gen ^($label ...) */
 rewriteTokenLabelRefRoot(label,elementIndex) ::= <<
-(setq root_<treeLevel> (funcall adaptor-become-root (a3el-rewrite-stream-next stream_<label>) root_<treeLevel>))<\n>
+(setq root_<treeLevel> (funcall adaptor-become-root (a3el-rewrite-stream-next-node stream_<label>) root_<treeLevel>))<\n>
 >>
 
 /** Gen ^($label ...) where label+=... */
 rewriteTokenListLabelRefRoot ::= rewriteTokenLabelRefRoot
 
 /** Gen ^(ID ...) or ^(ID[args] ...) */
-rewriteTokenRefRoot(token,elementIndex,args) ::= <<
-(setq root_<treeLevel> (funcall adaptor-become-root 
-      <if(args)>
-      (funcall adaptor-create <token> <args; separator=" ">)
-      <else>
-      (a3el-rewrite-stream-next stream_<token>)
-      <endif>
-       root_<treeLevel>))
-       <\n>
+rewriteTokenRefRoot(token,elementIndex,hetero,args) ::= <<
+(setq root_<treeLevel> (funcall adaptor-become-root (<createRewriteNodeFromElement(...)> root_<treeLevel>)))<\n>
 >>
 
-rewriteImaginaryTokenRef(args,token,elementIndex) ::= <<
-(funcall adaptor-add-child root_<treeLevel> 
-	 (funcall adaptor-create <token> <args; separator=" "> <if(!args)>"<token>"<endif>)
-	 )<\n>
+rewriteImaginaryTokenRef(args,token,hetero,elementIndex) ::= <<
+(funcall adaptor-add-child root_<treeLevel> <createImaginaryNode(tokenType=token, ...)>)<\n>
 >>
 
-rewriteImaginaryTokenRefRoot(args,token,elementIndex) ::= <<
-(setq root_<treeLevel> (funcall adaptor-become-root 
-      (funcall adaptor-create <token> <args; separator=" "><if(!args)>"<token>"<endif>)
-      root_<treeLevel>
-      ))<\n>
+rewriteImaginaryTokenRefRoot(args,token,hetero,elementIndex) ::= <<
+(setq root_<treeLevel> (funcall adaptor-become-root <createImaginaryNode(tokenType=token, ...)> root_<treeLevel>))<\n>
 >>
 
 /** plain -> {foo} action */
@@ -455,11 +353,11 @@ rewriteAction(action) ::= <<
 prevRuleRootRef() ::= "retval"
 
 rewriteRuleRef(rule) ::= <<
-(funcall adaptor-add-child root_<treeLevel> (a3el-rewrite-stream-next stream_<rule>))<\n>
+(funcall adaptor-add-child root_<treeLevel> (a3el-rewrite-stream-next-tree stream_<rule>))<\n>
 >>
 
 rewriteRuleRefRoot(rule) ::= <<
-(setq root_<treeLevel> (funcall adaptor-become-root (a3el-rewrite-stream-next-node stream_<rule>) root_<treeLevel>))<\n>
+(setq root_<treeLevel> (funcall adaptor-become-root (a3el-rewrite-stream-next-node stream_<rule>) root_<treeLevel>)<\n>
 >>
 
 rewriteNodeAction(action) ::= <<
@@ -472,22 +370,48 @@ rewriteNodeActionRoot(action) ::= <<
 
 /** Gen $ruleLabel ... where defined via ruleLabel=rule */
 rewriteRuleLabelRef(label) ::= <<
-(funcall adaptor-add-child root_<treeLevel> (a3el-rewrite-stream-next stream_<label>))<\n>
+(funcall adaptor-add-child root_<treeLevel> (a3el-rewrite-stream-next-tree stream_<label>))<\n>
 >>
 
 /** Gen $ruleLabel ... where defined via ruleLabel+=rule */
 rewriteRuleListLabelRef(label) ::= <<
-;; FIXME TODO
-(funcall adaptor-add-child root_<treeLevel> 
-	 (a3el-retval-tree (a3el-rewrite-stream-next stream_<label>)))
+(funcall adaptor-add-child root_<treeLevel> (a3el-rewrite-stream-next-tree stream_<label>))<\n>
 >>
 
 /** Gen ^($ruleLabel ...) where ruleLabel=rule */
 rewriteRuleLabelRefRoot(label) ::= <<
-(setq root_<treeLevel> (funcall adaptor-become-root (a3el-rewrite-stream-next-node stream_<label>) root_<treeLevel>))<\n>
+(setq root_<treeLevel> (funcall adaptor-become-root (a3el-rewrite-stream-next-node stream_<label>)) root_<treeLevel>)<\n>
 >>
 
 /** Gen ^($ruleLabel ...) where ruleLabel+=rule */
 rewriteRuleListLabelRefRoot(label) ::= <<
-(setq root_<treeLevel> (funcall adaptor-become-root (a3el-rewrite-stream-next-node stream_<label>) root_<treeLevel>))<\n>
+(setq root_<treeLevel> (funcall adaptor-become-root (a3el-rewrite-stream-next-node stream_<label>)) root_<treeLevel>)<\n>
+>>
+
+rewriteWildcardLabelRef(label) ::= <<
+(funcall adaptor-add-child root_<treeLevel> (a3el-rewrite-stream-next-tree stream_<label>))<\n>
+>>
+
+
+createImaginaryNode(tokenType,hetero,args) ::= <<
+<if(hetero)>
+<! new MethodNode(IDLabel, args) !>
+;; FIXME create hetero
+;; new <hetero>(<tokenType><if(args)> <args; separator=", "><endif>)
+<else>
+(funcall adaptor-create <tokenType> <args; separator=" "><if(!args)>"<tokenType>"<endif>)
+<endif>
+>>
+
+createRewriteNodeFromElement(token,hetero,args) ::= <<
+<if(hetero)>
+;; FIXME create hetero
+;; new <hetero>(stream_<token>.nextToken()<if(args)> <args; separator=", "><endif>)
+<else>
+<if(args)> <! must create new node from old !>
+(funcall adaptor-create <token> <args; separator=" ">)
+<else>
+(a3el-rewrite-stream-next-node stream_<token>)
+<endif>
+<endif>
 >>

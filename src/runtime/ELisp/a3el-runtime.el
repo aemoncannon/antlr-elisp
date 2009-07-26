@@ -188,7 +188,7 @@
 	   ))))
 
 
-(defun a3el-rewrite-stream-next (s)
+(defun a3el-rewrite-stream-next-tree (s)
   "Return the next element in the stream.  If out of elements, throw
    an exception unless size()==1.  If size is 1, then return elements[0].
    Return a duplicate node/subtree if stream is out of elements and
@@ -206,8 +206,7 @@
 
 (defun a3el-rewrite-stream_next (s)
   "Do the work of getting the next element, making sure that it's
-   a tree node or subtree.  Deal with the optimization of single-
-   element list versus list of size > 1.  Throw an exception
+   a tree node or subtree. Throw an exception
    if the stream is empty or we're out of elements and size>1.
    protected so you can override in a subclass if necessary."
   (let ((n (length (a3el-rewrite-stream-elements s)))
@@ -240,25 +239,32 @@
    Hideous code duplication here with super.next().  Can't think of
    a proper way to refactor.  This needs to always call dup node
    and super.next() doesn't know which to call: dup node or dup tree."
-  (let ((n (length (a3el-rewrite-stream-elements s)))
-	(dirty (a3el-rewrite-stream-dirty s))
-	(cursor (a3el-rewrite-stream-cursor s)))
-    (if (or dirty (and (>= cursor n) (= n 1)))
-	;;if out of elements and size is 1, dup (at most a single node
-	;;since this is for making root nodes).
-	(let ((el (a3el-rewrite-stream_next s)))
-	  (funcall (a3el-tree-adaptor-dup-node
-		    (a3el-rewrite-stream-adaptor s)) el))
-      (a3el-rewrite-stream_next s))))
 
+  (let ((adaptor (a3el-rewrite-stream-adaptor s)))
+    (cond 
+     ((a3el-rewrite-token-stream-p s)
+      (funcall (a3el-tree-adaptor-create adaptor) 
+	       (a3el-rewrite-stream_next s)))
+
+     ((a3el-rewrite-subtree-stream-p s)
+      (let ((n (length (a3el-rewrite-stream-elements s)))
+	    (dirty (a3el-rewrite-stream-dirty s))
+	    (cursor (a3el-rewrite-stream-cursor s)))
+	(if (or dirty (and (>= cursor n) (= n 1)))
+	    ;;if out of elements and size is 1, dup (at most a single node
+	    ;;since this is for making root nodes).
+	    (let ((el (a3el-rewrite-stream_next s)))
+	      (funcall (a3el-tree-adaptor-dup-node
+			adaptor) el))
+	  (a3el-rewrite-stream_next s)))))))
+
+(defun a3el-rewrite-stream-next-token (s)
+  (a3el-rewrite-stream_next s))
 
 (defun a3el-rewrite-stream-to-tree (s el)
   "Ensure stream emits trees; tokens must be converted to AST nodes.
    AST nodes can be passed through unmolested."
-  (if (a3el-rewrite-token-stream-p s) 
-      (funcall (a3el-tree-adaptor-create
-		(a3el-rewrite-stream-adaptor s)) el)
-    el))
+  el)
 
 
 (defun a3el-rewrite-stream-dup (s el)
@@ -266,10 +272,13 @@
    subtree.  Dup'ing a token means just creating another AST node
    around it.  For trees, you must call the adaptor.dupTree() unless
    the element is for a tree root; then it must be a node dup."
-  (if (a3el-rewrite-token-stream-p s)
-      (signal 'error "Dup can't be called for a token stream")
+  (cond 
+   ((a3el-rewrite-token-stream-p s)
+    (signal 'error "Dup can't be called for a token stream"))
+
+   ((a3el-rewrite-token-stream-p s)	
     (funcall (a3el-tree-adaptor-dup-tree
-	      (a3el-rewrite-stream-adaptor s)) el)))
+	      (a3el-rewrite-stream-adaptor s)) el))))
 
 
 (defun a3el-rewrite-stream-has-next (s)
@@ -286,6 +295,14 @@
   (token nil)
   (is-nil nil)
   (children '()))
+
+
+(defstruct (a3el-common-error-tree (:include a3el-common-tree))
+  "Extend a3el-common-tree to store error information"
+  (input nil)
+  (start -1)
+  (stop -1)
+  (re nil))
 
 
 (defun a3el-common-tree-dup-node (tree)
@@ -353,6 +370,14 @@
   (new-nil 
    #'(lambda () 
        (make-a3el-common-tree :is-nil t)))
+
+
+  ;; Create tree node that holds the start and stop tokens associated
+  ;; with an error.
+  (error-node 
+   #'(lambda (input start stop re) 
+       (make-a3el-common-error-tree :input input :start start
+				    :stop stop :re re)))
 
 
   ;; Add a child to the tree t.  If child is a flat tree (a list), make all
