@@ -1,5 +1,7 @@
-lexer grammar calc_elisp;
+grammar calc_elisp;
 options { language = ELisp; }
+
+evaluate : INTEGER EOF; // Just so a parser will be created
 
 LPAREN: '(';
 RPAREN: ')';

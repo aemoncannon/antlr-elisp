@@ -42,6 +42,9 @@ group AST;
 parserMembers() ::= <<
 >>
 
+@returnScope.ruleReturnMembers() ::= <<
+>>
+
 
 /** Add a variable to track rule's return AST */
 ruleDeclarations() ::= <<

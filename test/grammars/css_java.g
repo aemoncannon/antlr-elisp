@@ -3,6 +3,7 @@ grammar css_java;
 options {
 	language=Java;
 	k=4;
+	output=AST;
 }
 
 tokens{
@@ -16,6 +17,7 @@ stylesheet
         (WS|CDO|CDC)* (importCSS (WS|CDO|CDC)* )*
         ((ruleset | media | page) (WS|CDO|CDC)* )*
 		EOF
+   -> ^(STYLESHEET ruleset*)
   ;
 
 ruleset
@@ -23,6 +25,7 @@ ruleset
     LBRACE 
         declaration? (SEMI declaration)* SEMI? 
     RBRACE
+    -> ^(RULE_SET selector+ LBRACE declaration* RBRACE)
   ;
 
 importCSS
@@ -59,6 +62,7 @@ combinator
 
 selector
   : simpleSelector (combinator simpleSelector)*
+    -> ^(SELECTOR simpleSelector+)
   ;
   
 simpleSelector
@@ -87,10 +91,12 @@ prio
 	
 declaration
   : IDENT  ':'	expr prio?
+        -> ^(DECLARATION IDENT ':' expr)
   ;
 
 expr
-  :  term (operator term)*
+  :  term (operator term)*  
+        -> ^(VALUE_LIST term+)
   ;
   
 term
@@ -108,6 +114,7 @@ function
 
 color
     : HASH
+        -> ^(COLOR HASH)
     ;
         
 element_name
@@ -168,20 +175,20 @@ WS	:	(	' '
 
 // string literals
 STRING
-	:	'"'! (ESC|~('"'|'\\'|'\n'|'\r'))* '"'!
-	|	'\''! (ESC|~('\''|'\\'|'\n'|'\r'))* '\''!
+	:	'"' (ESC|~('"'|'\\'|'\n'|'\r'))* '"'
+	|	'\'' (ESC|~('\''|'\\'|'\n'|'\r'))* '\''
 	;
 
 // Single-line comments
 SL_COMMENT
 	:	'//'
 		(~('\n'|'\r'))* ('\n'|'\r'('\n')?)
-		{ $channel = HIDDEN; }
+        { (a3el-lexer-set-channel 99)}
 	;
 	
 // multiple-line comments
 COMMENT
-	:	'/*' ( options {greedy=false;} : . )* '*/' { $channel = HIDDEN;}
+	:	'/*' ( options {greedy=false;} : . )* '*/' 		{ $channel = HIDDEN; }
 	;
 
 IDENT

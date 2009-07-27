@@ -112,9 +112,21 @@ filteringNextToken() ::= <<
 ;; FIXME(alreadyParsedRule)
 >>
 
-actionGate() ::= "(setf (a3el-parser-context-backtracking context) 0)"
+actionGate() ::= <<
+<if(LEXER)>
+(= (a3el-lexer-context-backtracking context) 0)
+<else>
+(= (a3el-parser-context-backtracking context) 0)
+<endif>
+>>
 
-filteringActionGate() ::= "(setf (a3el-parser-context-backtracking context) 1)"
+filteringActionGate() ::=  <<
+<if(LEXER)>
+(= (a3el-lexer-context-backtracking context) 1)
+<else>
+(= (a3el-parser-context-backtracking context) 1)
+<endif>
+>>
 
 /** How to generate a parser */
 genericParser(grammar, name, scopes, tokens, tokenNames, rules, numRules,
@@ -739,11 +751,11 @@ wildcardCharListLabel(label, elementIndex) ::= <<
  *  and a return value or values.
  */
 ruleRef(rule,label,elementIndex,args, scope) ::= <<
-(a3el-parser-push-follow FOLLOW_<rule>_in_<ruleName><elementIndex>)
+(a3el-parser-push-follow FOLLOW_<rule.name>_in_<ruleName><elementIndex>)
 <if(label)>
-(setq <label> (a3el-parser-call-rule <rule> <args; separator=" ">))<\n>
+(setq <label> (a3el-parser-call-rule <rule.name> <args; separator=" ">))<\n>
 <else>
-(a3el-parser-call-rule <rule> <args; separator=" ">)<\n>
+(a3el-parser-call-rule <rule.name> <args; separator=" ">)<\n>
 <endif>
 (decf (a3el-parser-context-fsp context))
 <checkRuleBacktrackFailure()><\n>
@@ -1185,9 +1197,10 @@ ruleLabelDef(label) ::= <<
  *  start/stop tokens, tree stuff, attributes, ...  Leave a hole for
  *  subgroups to stick in members.
  *
- * NOTE: Elisp doesn't need this, we use a3el-retval for everything.
  */
-returnScope(scope) ::= <<>>
+returnScope(scope) ::= <<
+;; returnScope  <@ruleReturnMembers()> NOTE: Elisp doesn't need this, we use a3el-retval for everything.
+>>
 
 parameterScope(scope) ::= <<
 <scope.attributes:{<it.decl>}; separator=", ">
@@ -1327,7 +1340,7 @@ ruleSetPropertyRef_st(scope,attr,expr) ::= "(setf (a3el-retval-st retval) <expr>
 execAction(action) ::= <<
 <if(backtracking)>
 <if(actions.(actionScope).synpredgate)>
-(when (<actions.(actionScope).synpredgate>)
+(when <actions.(actionScope).synpredgate>
   <action>)
 <else>
 

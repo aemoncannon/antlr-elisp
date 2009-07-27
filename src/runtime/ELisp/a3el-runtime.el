@@ -398,7 +398,7 @@
 
 
   ;; Return the count of tree's chidren.
-  (get-child 
+  (get-child-count
    #'(lambda (t) 
        (if t
 	   (length (a3el-common-tree-children t))
@@ -540,11 +540,20 @@
   )
 
 (defmacro a3el-lexer-predict-DFA (name)
-  `(a3el-predict-DFA-with (gethash ',name (a3el-lexer-dfas (a3el-lexer-context-lexer context)))))
+  `(a3el-lexer-predict-DFA-with (gethash ',name (a3el-lexer-dfas (a3el-lexer-context-lexer context)))))
 
 (defmacro a3el-lexer-set-DFA (name value)
   "Install a newly instantiated DFA into the lexer (during lexer definition)."
   `(puthash ',name ,value (a3el-lexer-dfas current-lexer)))
+
+
+(defmacro a3el-parser-predict-DFA (name)
+  `(a3el-parser-predict-DFA-with (gethash ',name (a3el-parser-dfas (a3el-parser-context-parser context)))))
+
+(defmacro a3el-parser-set-DFA (name value)
+  "Install a newly instantiated DFA into the lexer (during lexer definition)."
+  `(puthash ',name ,value (a3el-parser-dfas current-parser)))
+
 
 (defmacro a3el-defDFAstruct (name &rest defaults)
   "Define a custom DFA creation function"
@@ -905,8 +914,7 @@
   (a3el-lexer-input-consume))
   
 
-;; Must be defined AFTER required macros
-(defun a3el-predict-DFA-with (dfa)
+(defun a3el-lexer-predict-DFA-with (dfa)
   (let ((mark (a3el-lexer-input-mark)))
     (unwind-protect
 	(catch 'return
@@ -1036,6 +1044,7 @@
   (token-names nil)
   (tokens (make-hash-table))
   (rules (make-hash-table))
+  (dfas (make-hash-table))
   (bitsets (make-hash-table))
   (entry-func nil)
   (tree-adaptor (make-a3el-tree-adaptor))
@@ -1420,6 +1429,45 @@
 	    ))))
     (a3el-bitset-remove follow-set *a3el-token-eor-token-type*)
     follow-set
+    ))
+
+
+(defun a3el-parser-predict-DFA-with (dfa)
+  (let ((mark (a3el-parser-input-mark)))
+    (unwind-protect
+	(catch 'return
+	  (let ((s 0))
+	    (while t
+	      (catch 'continue
+		(let ((special-state (aref (a3el-DFA-special dfa) s)))
+		  (when (>= special-state 0)
+		    (setq s (funcall (a3el-DFA-special-state-transition dfa) special-state))
+		    (a3el-parser-input-consume)
+		    (throw 'continue nil))
+		  (when (>= (aref (a3el-DFA-accept dfa) s) 1)
+		    (throw 'return (aref (a3el-DFA-accept dfa) s)))
+		  (let ((c (a3el-parser-input-LA 1)))
+		    (when (and (>= c (aref (a3el-DFA-min dfa) s)) (<= c (aref (a3el-DFA-max dfa) s)))
+		      (let ((snext (aref (aref (a3el-DFA-transition dfa) s) (- c (aref (a3el-DFA-min dfa) s)) )))
+			(when (< snext 0)
+			  (when (>= (aref (a3el-DFA-eot dfa) s) 0)
+			    (setq s (aref (a3el-DFA-eot dfa) s))
+			    (a3el-parser-input-consume)
+			    (throw 'continue nil))
+			  (signal 'a3el-no-viable-alt (list s))
+			  (throw 'return 0))
+			(setq s snext)
+			(a3el-parser-input-consume)
+			(throw 'continue nil)))
+		    (when (>= (aref (a3el-DFA-eot dfa) s) 0)
+		      (setq s (aref (a3el-DFA-eot dfa) s))
+		      (a3el-parser-input-consume)
+		      (throw 'continue nil))
+		    (when (and (eq c *a3el-token-eof-token*) (>= (aref (a3el-DFA-eof dfa) s) 0))
+		      (throw 'return (aref (a3el-DFA-accept dfa) (aref (a3el-DFA-eof dfa) s))))
+		    (signal 'a3el-no-viable-alt (list s))
+		    (throw 'return 0)))))))
+      (a3el-parser-input-rewind-to mark))
     ))
 
 

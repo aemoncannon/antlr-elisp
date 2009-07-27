@@ -1,5 +1,7 @@
-lexer grammar calc_java;
+grammar calc_java;
 options { language = Java; }
+
+evaluate : INTEGER EOF; // Just so a parser will be created
 
 LPAREN: '(';
 RPAREN: ')';
