@@ -92,6 +92,10 @@
 
 (defconst *a3el-token-invalid-token-type* 0)
 
+(defconst *a3el-token-down-token-type* 2)
+
+(defconst *a3el-token-up-token-type* 3)
+
 (defconst *a3el-token-eof-token-type* -1)
 
 (defconst *a3el-token-eor-token-type* 1)

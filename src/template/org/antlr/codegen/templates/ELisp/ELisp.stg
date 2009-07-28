@@ -65,7 +65,7 @@ outputFile(LEXER,PARSER,TREE_PARSER, actionScope, actions,
 >>
 
 lexer(grammar, name, tokens, scopes, rules, numRules, labelType="Token",
-      filterMode, superClass="nil") ::= <<
+      filterMode, superClass="Lexer") ::= <<
  (a3el-deflexer <name>)
 
  (a3el-with-lexer <name>
@@ -91,8 +91,6 @@ lexer(grammar, name, tokens, scopes, rules, numRules, labelType="Token",
   <filteringNextToken()>
   <endif>
   <rules; separator="\n\n">
-
-  <synpreds:{p | <lexerSynpred(p)>}>
 
   <cyclicDFAs:cyclicDFA()> <! dump tables for all DFA !>
   <cyclicDFAs:{dfa | (a3el-lexer-set-DFA dfa<dfa.decisionNumber> (make-a3el-DFAstruct-DFA<dfa.decisionNumber>))}; separator="\n">
@@ -120,6 +118,7 @@ actionGate() ::= <<
 <endif>
 >>
 
+
 filteringActionGate() ::=  <<
 <if(LEXER)>
 (= (a3el-lexer-context-backtracking context) 1)
@@ -131,7 +130,8 @@ filteringActionGate() ::=  <<
 /** How to generate a parser */
 genericParser(grammar, name, scopes, tokens, tokenNames, rules, numRules,
               bitsets, inputStreamType, superClass,
-              ASTLabelType="Object", labelType, members, rewriteElementType, filterMode) ::= <<
+              ASTLabelType="Object", labelType, members, rewriteElementType, 
+	      filterMode) ::= <<
 
   (a3el-defparser <name>)
 
@@ -187,8 +187,6 @@ genericParser(grammar, name, scopes, tokens, tokenNames, rules, numRules,
 
     <rules; separator="\n\n">
 
-    <synpreds:{p | <synpred(p)>}>
-
     <cyclicDFAs:cyclicDFA()> <! dump tables for all DFA !>
     <cyclicDFAs:{dfa | (a3el-parser-set-DFA dfa<dfa.decisionNumber> (make-a3el-DFAstruct-DFA<dfa.decisionNumber>))}; separator="\n">
 )
@@ -198,15 +196,21 @@ parserCtorBody() ::= <<
 ;; FIXME Setup delegates and rule memoization
 >>
 
-parser(grammar, name, scopes, tokens, tokenNames, rules, numRules, bitsets, ASTLabelType, superClass="nil", labelType="Token", members={<actions.parser.members>}) ::= <<
+parser(grammar, name, scopes, tokens, tokenNames, rules, numRules, bitsets, 
+		ASTLabelType="Object", superClass="Parser", labelType="Token", 
+		members={<actions.parser.members>}) ::= <<
 <genericParser(inputStreamType="TokenStream",rewriteElementType="Token", ...)>
 >>
 
 /** How to generate a tree parser; same as parser except the input
  *  stream is a different type.
  */
-treeParser(grammar, name, scopes, tokens, tokenNames, globalAction, rules, numRules, bitsets, labelType={<ASTLabelType>}, ASTLabelType="Object", superClass="TreeParser", members={<actions.treeparser.members>}, filterMode) ::= <<
-<genericParser(inputStreamType="TreeNodeStream", rewriteElementType="Token", ...)>
+treeParser(grammar, name, scopes, tokens, tokenNames, globalAction, rules, 
+ 	   numRules, bitsets, labelType={<ASTLabelType>}, ASTLabelType="Object", 
+           superClass={<if(filterMode)><if(buildAST)>TreeRewriter<else>TreeFilter<endif><else>TreeParser<endif>},
+           members={<actions.treeparser.members>}, 
+          filterMode) ::= <<
+<genericParser(inputStreamType="TreeNodeStream", rewriteElementType="Node", ...)>
 >>
 
 /** A simpler version of a rule template that is specific to the imaginary
@@ -220,7 +224,8 @@ synpredRule(ruleName, ruleDescriptor, block, description, nakedBlock) ::=
 <<
 ;; $ANTLR start <ruleName>
 (a3el-defrule <ruleName>_fragment (<ruleDescriptor.parameterScope:parameterScope(scope=it)>)
-  <if(trace)>(trace-in "<ruleName>_fragment" <ruleDescriptor.index>)<endif>
+  <if(trace)>
+  (trace-in "<ruleName>_fragment" <ruleDescriptor.index>)
   (catch 'rule-return
   (unwind-protect
     (progn 
@@ -228,12 +233,18 @@ synpredRule(ruleName, ruleDescriptor, block, description, nakedBlock) ::=
 	nil
 	)
     <if(trace)>(trace-out "<ruleName>_fragment" <ruleDescriptor.index>)<endif>
-    )))
+    ))
+  <else>
+  (catch 'rule-return
+    (progn 
+        <block>
+	nil
+	))
+  <endif>
+)
 ;; $ANTLR end <ruleName>
 >>
 
-synpred(name) ::= << >>
-lexerSynpred(name) ::= <<>>
 
 
 ruleMemoization(name) ::= <<
@@ -247,12 +258,12 @@ checkRuleBacktrackFailure() ::= <<
 <if(backtracking)>
 	<if(LEXER)>
 	(if (a3el-lexer-context-failed context) 
-	(throw 'rule-return (or <ruleReturnValue()>)))
+	(throw 'rule-return <ruleReturnValue()>))
 
 	<else>
 
 	(if (a3el-parser-context-failed context)
-	(throw 'rule-return (or <ruleReturnValue()>)))
+	(throw 'rule-return <ruleReturnValue()>))
 	<endif>
 <endif>
 >>
@@ -283,11 +294,6 @@ ruleBacktrackFailure() ::= <<
 rule(ruleName,ruleDescriptor,block,emptyRule,description,exceptions,finally,memoize) ::= <<
 <ruleAttributeScope(scope=ruleDescriptor.ruleScope)>
 <returnScope(scope=ruleDescriptor.returnScope)>
-
-
-<ruleAttributeScope(scope=ruleDescriptor.ruleScope)>
-<returnScope(scope=ruleDescriptor.returnScope)>
-
 
 
 ;; $ANTLR start <ruleName>
@@ -444,13 +450,15 @@ lexerRule(ruleName,nakedBlock,ruleDescriptor,block,memoize) ::= <<
   <ruleDescriptor.actions.init>
   <block><\n>
 <else>
-  (let ((_type (a3el-lexer-token-id <ruleName>)))
+  (let ((_type (a3el-lexer-token-id <ruleName>))
+        (_channel (a3el-lexer-token-id *a3el-token-default-channel*)))
     <ruleMemoization(name=ruleName)>
     <lexerRuleLabelDefs()>
     <ruleDescriptor.actions.init>
     <block>
     <ruleCleanUp()>
-    (a3el-lexer-set-type _type)
+    (setf (a3el-lexer-context-type context) _type)
+    (setf (a3el-lexer-context-channel context) _channel)
     <(ruleDescriptor.actions.after):execAction()>
   )
 <endif>
@@ -540,7 +548,7 @@ positiveClosureBlock(alts,decls,decision,enclosingBlockLevel,blockLevel,decision
               (throw 'loop<decisionNumber> nil))
             <ruleBacktrackFailure()>
             (signal 'a3el-early-exit (list <decisionNumber>)))))
-        (incf cnt<decisionNumber>))
+        (setq cnt<decisionNumber>(+ 1 cnt<decisionNumber>)))
     ))
 <@postloop()>)
 >>
@@ -609,10 +617,9 @@ element() ::= <<
 
 /** match a token optionally with a label in front */
 tokenRef(token,label,elementIndex, hetero) ::= <<
-<if(label)>
-(setq <label> (a3el-parser-input-LT 1))<\n>
-<endif>
+<if(label)>(setq <label> <endif>
 (a3el-parser-match <token> FOLLOW_<token>_in_<ruleName><elementIndex>)
+<if(label)>)<endif>
 <checkRuleBacktrackFailure()>
 >>
 
@@ -631,7 +638,8 @@ charRef(char,label) ::= <<
 <if(label)>
 (setq <label> (a3el-lexer-input-LA 1))<\n>
 <endif>
-(a3el-lexer-match <char>) <checkRuleBacktrackFailure()>
+(a3el-lexer-match <char>) 
+<checkRuleBacktrackFailure()>
 >>
 
 
@@ -644,7 +652,10 @@ charRangeRef(a,b,label) ::= <<
 (setq <label> (a3el-parser-input-LA 1))<\n>
 <endif>
 <endif>
-(a3el-lexer-match-range <a> <b>) <checkRuleBacktrackFailure()>
+
+;; FIXME Will this work in a parser?
+(a3el-lexer-match-range <a> <b>) 
+<checkRuleBacktrackFailure()>
 >>
 
 /** For now, sets are interval tests and must be tested inline */
@@ -702,11 +713,18 @@ matchSetAndListLabel(s,label,elementIndex,postmatchCode) ::= <<
 /** Match a string literal */
 lexerStringRef(string,label) ::= <<
 <if(label)>
-int <label>Start = getCharIndex();
-match(<string>); <checkRuleBacktrackFailure()>
-<labelType> <label> = new CommonToken(input, Token.INVALID_TOKEN_TYPE, Token.DEFAULT_CHANNEL, <label>Start, getCharIndex()-1);
+(setq <label>Start (point))
+(a3el-lexer-match <string>)<\n>
+<checkRuleBacktrackFailure()>
+(setq <label> (make-a3el-common-token 
+      	       :input current-buffer
+      	      :token *a3el-token-invalid-token-type*
+	      :channel *a3el-token-default-channel*
+	      :start <label>Start
+	      :stop (- (point) 1)))
 <else>
-(a3el-lexer-match <string>) <checkRuleBacktrackFailure()><\n>
+(a3el-lexer-match <string>)<\n>
+<checkRuleBacktrackFailure()><\n>
 <endif>
 >>
 
@@ -747,8 +765,12 @@ wildcardCharListLabel(label, elementIndex) ::= <<
 <listLabel(elem=label,...)>
 >>
 
+
 /** Match a rule reference by invoking it possibly with arguments
- *  and a return value or values.
+ *  and a return value or values.  The 'rule' argument was the
+ *  target rule name, but now is type Rule, whose toString is
+ *  same: the rule name.  Now though you can access full rule
+ *  descriptor stuff.
  */
 ruleRef(rule,label,elementIndex,args, scope) ::= <<
 (a3el-parser-push-follow FOLLOW_<rule.name>_in_<ruleName><elementIndex>)
@@ -767,12 +789,22 @@ ruleRefAndListLabel(rule,label,elementIndex,args,scope) ::= <<
 <listLabel(elem=label,...)>
 >>
 
-/** A lexer rule reference */
+/** A lexer rule reference.
+ *
+ *  The 'rule' argument was the target rule name, but now
+ *  is type Rule, whose toString is same: the rule name.
+ *  Now though you can access full rule descriptor stuff.
+ */
 lexerRuleRef(rule,label,args,elementIndex,scope) ::= <<
 <if(label)>
-int <label>Start<elementIndex> = getCharIndex();
+(setq <label>Start<elementIndex> (point))
 (a3el-lexer-call-rule <rule.name> <args; separator=" ">) <checkRuleBacktrackFailure()>
-<label> = new CommonToken(input, Token.INVALID_TOKEN_TYPE, Token.DEFAULT_CHANNEL, <label>Start<elementIndex>, getCharIndex()-1);
+(setq <label> (make-a3el-common-token 
+              :input current-buffer
+      	      :token *a3el-token-invalid-token-type*
+	      :channel *a3el-token-default-channel*
+	      :start <label>Start<elementIndex>
+	      :stop (- (point) 1)))
 <else>
 (a3el-lexer-call-rule <rule.name> <args; separator=" ">) <checkRuleBacktrackFailure()>
 <endif>
@@ -787,28 +819,33 @@ lexerRuleRefAndListLabel(rule,label,args,elementIndex,scope) ::= <<
 /** EOF in the lexer */
 lexerMatchEOF(label,elementIndex) ::= <<
 <if(label)>
-;; TODO3
-;;int <label>Start<elementIndex> = getCharIndex();
-;;(a3el-lexer-match EOF) <checkRuleBacktrackFailure()>
-;;<labelType> <label> = new CommonToken(input, EOF, Token.DEFAULT_CHANNEL, <label>Start<elementIndex>, getCharIndex()-1);
+(setq <label>Start<elementIndex> (point))
+(a3el-lexer-match EOF) <checkRuleBacktrackFailure()>
+(setq <label> (make-a3el-common-token 
+              :input current-buffer
+      	      :token *a3el-token-eof-token-type*
+	      :channel *a3el-token-default-channel*
+	      :start <label>Start<elementIndex>
+	      :stop (- (point) 1)))
 <else>
 (a3el-lexer-match EOF) <checkRuleBacktrackFailure()>
 <endif>
 >>
 
 /** match ^(root children) in tree parser */
-tree(root, actionsAfterRoot, children, nullableChildList, enclosingTreeLevel, treeLevel) ::= <<
+tree(root, actionsAfterRoot, children, nullableChildList, 
+      enclosingTreeLevel, treeLevel) ::= <<
 <root:element()>
 <actionsAfterRoot:element()>
 <if(nullableChildList)>
-(when (equal (a3el-parser-input-LA 1) *a3el-token-down*)
-    match(input, Token.DOWN, null); <checkRuleBacktrackFailure()>
+(when (equal (a3el-parser-input-LA 1) *a3el-token-down-token-type*)
+    (a3el-parser-match *a3el-token-down-token-type* nil) <checkRuleBacktrackFailure()>
     <children:element()>
-    match(input, Token.UP, null); <checkRuleBacktrackFailure()>)
+    (a3el-parser-match *a3el-token-up-token-type* nil) <checkRuleBacktrackFailure()>)
 <else>
-match(input, Token.DOWN, null); <checkRuleBacktrackFailure()>
+(a3el-parser-match *a3el-token-down-token-type* nil) <checkRuleBacktrackFailure()>
 <children:element()>
-match(input, Token.UP, null); <checkRuleBacktrackFailure()>
+(a3el-parser-match *a3el-token-up-token-type* nil) <checkRuleBacktrackFailure()>)
 <endif>
 >>
 
