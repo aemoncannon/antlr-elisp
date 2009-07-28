@@ -152,13 +152,13 @@ rewriteCode(
 	rewriteBlockLevel, enclosingTreeLevel, treeLevel) ::=
 <<
 
-// AST REWRITE
-// elements: <referencedElementsDeep; separator=", ">
-// token labels: <referencedTokenLabels; separator=", ">
-// rule labels: <referencedRuleLabels; separator=", ">
-// token list labels: <referencedTokenListLabels; separator=", ">
-// rule list labels: <referencedRuleListLabels; separator=", ">
-// wildcard labels: <[referencedWildcardLabels,referencedWildcardListLabels]; separator=", ">
+;; AST REWRITE
+;; elements: <referencedElementsDeep; separator=", ">
+;; token labels: <referencedTokenLabels; separator=", ">
+;; rule labels: <referencedRuleLabels; separator=", ">
+;; token list labels: <referencedTokenListLabels; separator=", ">
+;; rule list labels: <referencedRuleListLabels; separator=", ">
+;; wildcard labels: <[referencedWildcardLabels,referencedWildcardListLabels]; separator=", ">
 <if(backtracking)>
 (if <actions.(actionScope).synpredgate> <\n>
 <endif>
@@ -179,10 +179,10 @@ rewriteCode(
 <endif>
 <! if parser or tree-parser && rewrite!=true, we need to set result !>
 <if(!TREE_PARSER)>
-(setf (a3el-retval-tree <prevRuleRootRef()>) root_0)A
+(setf (a3el-retval-tree <prevRuleRootRef()>) root_0)
 <else>
 <if(!rewriteMode)>
-(setf (a3el-retval-tree <prevRuleRootRef()>) root_0)A
+(setf (a3el-retval-tree <prevRuleRootRef()>) root_0)
 <endif>
 <endif>
 <if(backtracking)>
@@ -332,7 +332,7 @@ rewriteTokenListLabelRefRoot ::= rewriteTokenLabelRefRoot
 
 /** Gen ^(ID ...) or ^(ID[args] ...) */
 rewriteTokenRefRoot(token,elementIndex,hetero,args) ::= <<
-(setq root_<treeLevel> (funcall adaptor-become-root (<createRewriteNodeFromElement(...)> root_<treeLevel>)))<\n>
+(setq root_<treeLevel> (funcall adaptor-become-root <createRewriteNodeFromElement(...)> root_<treeLevel>))<\n>
 >>
 
 rewriteImaginaryTokenRef(args,token,hetero,elementIndex) ::= <<

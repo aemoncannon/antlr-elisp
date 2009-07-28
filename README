@@ -8,3 +8,5 @@ Notes for elisp target:
 * antlr rev 3994. 
   Skipping shared recognizer state changes. 
   Skipping tree adaptor impl changes -- we just don't need it.
+
+* at lexerRule in ELisp.stg -- assignment from _channel was overrwriting our lexer action.. 

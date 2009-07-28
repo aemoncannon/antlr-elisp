@@ -597,6 +597,7 @@ alt(elements,altNum,description,autoAST,outerAlt,treeLevel, rew) ::= <<
 ;; <fileName>:<description>
 <@declarations()>
 <elements:element()>
+<rew>
 <@cleanup()>
 >>
 
