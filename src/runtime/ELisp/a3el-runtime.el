@@ -57,6 +57,11 @@
      '(error a3el-re-error))
 (put 'a3el-mismatched-range 'error-message "Mismatched range")
 
+(put 'a3el-failed-predicate 'error-conditions
+     '(error a3el-re-error))
+(put 'a3el-failed-predicate 'error-message "Failed predicate")
+
+
 (put 'a3el-tree-adaptor-error 'error-conditions
      '(error a3el-runtime-error))
 
@@ -1182,17 +1187,24 @@
   here and bail out of the current production to the normal error
   exception catch (at the end of the method) by just throwing
   MismatchedTokenException upon input.LA(1)!=ttype."
-  (cond 
-   ((= (a3el-parser-input-LA 1) ttype)
-    (progn
-      (a3el-parser-input-consume)
-      (setf (a3el-parser-context-error-recovery context) nil)
-      (setf (a3el-parser-context-failed context) nil)))
+  (let ((LT_1 (a3el-parser-input-LT 1)))
+    (cond 
+     ((= (a3el-common-token-type LT_1) ttype)
+      (progn
+	(a3el-parser-input-consume)
+	(setf (a3el-parser-context-error-recovery context) nil)
+	(setf (a3el-parser-context-failed context) nil)
+	LT_1
+	))
 
-   ((> (a3el-parser-context-backtracking context) 0)
-    (setf (a3el-parser-context-failed context) t))
+     ((> (a3el-parser-context-backtracking context) 0)
+      (progn
+	(setf (a3el-parser-context-failed context) t)
+	LT_1
+	))
 
-   (t (a3el-parser-mismatch ttype follow))))
+     (t (a3el-parser-mismatch ttype follow)))
+    ))
 
 
 `(defmacro a3el-parser-match-any ()
@@ -1211,22 +1223,24 @@
 
 (defun a3el-parser-recover-from-mismatched-token (error-type ttype follow)
   ;;if next token is what we are looking for then "delete" this token
-  (if (= (a3el-parser-input-LA 2) ttype)
+  (let ((LT_2 (a3el-parser-input-LT 2)))
+    (if (= (a3el-common-token-type LT_2) ttype)
+	(progn
+	  (a3el-parser-report-error e)
+	  ;;(begin-resync)
+	  ;;simply delete extra token
+	  (a3el-parser-input-consume) 
+	  ;;(end-resync)
+	  ;;move past ttype token as if all were ok
+	  (a3el-parser-input-consume)
+	  LT_2)
       (progn
-	(a3el-parser-report-error e)
-	;;(begin-resync)
-	;;simply delete extra token
-	(a3el-parser-input-consume) 
-	;;(end-resync)
-	;;move past ttype token as if all were ok
-	(a3el-parser-input-consume))
-    (progn
-      ;; if (!recoverFromMismatchedElement(input,e,follow) ) {
-      ;;			throw e;
-      ;; }
-      (signal error-type nil)
-      )
-    ))
+	;; if (!recoverFromMismatchedElement(input,e,follow) ) {
+	;;			throw e;
+	;; }
+	(signal error-type nil)
+	)
+      )))
 
 
 (defun a3el-parser-recover-from-mismatched-token-no-type (error-type follow)

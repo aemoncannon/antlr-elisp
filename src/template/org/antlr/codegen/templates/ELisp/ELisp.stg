@@ -258,12 +258,12 @@ checkRuleBacktrackFailure() ::= <<
 <if(backtracking)>
 	<if(LEXER)>
 	(if (a3el-lexer-context-failed context) 
-	(throw 'rule-return <ruleReturnValue()>))
+	(throw 'rule-return (or <ruleReturnValue()>)))
 
 	<else>
 
 	(if (a3el-parser-context-failed context)
-	(throw 'rule-return <ruleReturnValue()>))
+	(throw 'rule-return (or <ruleReturnValue()>)))
 	<endif>
 <endif>
 >>
@@ -450,15 +450,13 @@ lexerRule(ruleName,nakedBlock,ruleDescriptor,block,memoize) ::= <<
   <ruleDescriptor.actions.init>
   <block><\n>
 <else>
-  (let ((_type (a3el-lexer-token-id <ruleName>))
-        (_channel (a3el-lexer-token-id *a3el-token-default-channel*)))
+  (let ((_type (a3el-lexer-token-id <ruleName>)))
     <ruleMemoization(name=ruleName)>
     <lexerRuleLabelDefs()>
     <ruleDescriptor.actions.init>
     <block>
     <ruleCleanUp()>
-    (setf (a3el-lexer-context-type context) _type)
-    (setf (a3el-lexer-context-channel context) _channel)
+    (a3el-lexer-set-type _type)
     <(ruleDescriptor.actions.after):execAction()>
   )
 <endif>
@@ -855,13 +853,14 @@ tree(root, actionsAfterRoot, children, nullableChildList,
 validateSemanticPredicate(pred,description) ::= <<
 (when (not <evalPredicate(...)>)
     <ruleBacktrackFailure()>
-    throw new FailedPredicateException(input, "<ruleName>", "<description>");)
+    (signal 'a3el-failed-predicate-error "<ruleName>" "<description>"))
 >>
 
 // F i x e d  D F A  (if-then-else)
 
 dfaState(k,edges,eotPredictsAlt,description,stateNumber,semPredState) ::= <<
-(let ((LA<decisionNumber>_<stateNumber> (<if(LEXER)>a3el-lexer-input-LA<else>a3el-parser-input-LA<endif> <k>)))<\n>
+(let ((LA<decisionNumber>_<stateNumber> 
+       (<if(LEXER)>a3el-lexer-input-LA<else>a3el-parser-input-LA<endif> <k>)))<\n>
 <edges; separator="\n   ">
 (progn
 <if(eotPredictsAlt)>
@@ -1136,16 +1135,16 @@ evalSynPredicate(pred,description) ::= <<
   <endif>
 >>
 
-lookaheadTest(atom,k,atomAsInt) ::= "(equal LA<decisionNumber>_<stateNumber> <atom>)"
+lookaheadTest(atom,k,atomAsInt) ::= "(= LA<decisionNumber>_<stateNumber> <atom>)"
 
 /** Sometimes a lookahead test cannot assume that LA(k) is in a temp variable
  *  somewhere.  Must ask for the lookahead directly.
  */
 isolatedLookaheadTest(atom,k,atomAsInt) ::= <<
    <if(LEXER)>
-   (equal (a3el-lexer-input-LA <k>) <atom>)
+   (= (a3el-lexer-input-LA <k>) <atom>)
    <else>
-   (equal (a3el-parser-input-LA <k>) <atom>)
+   (= (a3el-parser-input-LA <k>) <atom>)
    <endif>
 >>
 
@@ -1160,9 +1159,6 @@ isolatedLookaheadRangeTest(lower,upper,k,rangeNumber,lowerAsInt,upperAsInt) ::= 
   (and (\>= (a3el-parser-input-LA <k>) <lower>) (\<= (a3el-parser-input-LA <k>) <upper>))
   <endif>
 >>
-
-
-
 
 setTest(ranges) ::= "(or <ranges; separator=\" \">)"
 
@@ -1358,14 +1354,14 @@ input.toString(retval.start,input.LT(-1))
 >>
 rulePropertyRef_st(scope,attr) ::= "(a3el-retval-st retval)"
 
-lexerRulePropertyRef_text(scope,attr) ::= "getText()"
-lexerRulePropertyRef_type(scope,attr) ::= "_type"
-lexerRulePropertyRef_line(scope,attr) ::= "tokenStartLine"
-lexerRulePropertyRef_pos(scope,attr) ::= "tokenStartCharPositionInLine"
+lexerRulePropertyRef_text(scope,attr) ::= "(a3el-lexer-context-text context)"
+lexerRulePropertyRef_type(scope,attr) ::= "(a3el-lexer-context-type context)"
+lexerRulePropertyRef_line(scope,attr) ::= "(a3el-lexer-context-line context)"
+lexerRulePropertyRef_pos(scope,attr) ::= "(a3el-lexer-context-char-position-in-line context)"
 lexerRulePropertyRef_index(scope,attr) ::= "-1" // undefined token index in lexer
-lexerRulePropertyRef_channel(scope,attr) ::= "channel"
-lexerRulePropertyRef_start(scope,attr) ::= "tokenStartCharIndex"
-lexerRulePropertyRef_stop(scope,attr) ::= "(getCharIndex()-1)"
+lexerRulePropertyRef_channel(scope,attr) ::= "(a3el-lexer-context-channel context)"
+lexerRulePropertyRef_start(scope,attr) ::= "(a3el-lexer-context-token-start-char-index context)"
+lexerRulePropertyRef_stop(scope,attr) ::= "(- (point) 1)"
 
 // setting $st and $tree is allowed in local rule. everything else
 // is flagged as error
