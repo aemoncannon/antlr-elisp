@@ -285,7 +285,7 @@
    ((a3el-rewrite-token-stream-p s)
     (signal 'error "Dup can't be called for a token stream"))
 
-   ((a3el-rewrite-token-stream-p s)	
+   ((a3el-rewrite-subtree-stream-p s)	
     (funcall (a3el-tree-adaptor-dup-tree
 	      (a3el-rewrite-stream-adaptor s)) el))))
 
@@ -312,6 +312,17 @@
   (start -1)
   (stop -1)
   (re nil))
+
+(defun a3el-common-tree-pretty-print (tree &optional indent)
+  ;; (a3el-common-tree-pretty-print (make-a3el-common-tree :token (make-a3el-common-token :type 1)))
+  (let ((offset (make-string (or indent 0) ?\ ))
+	(token (a3el-common-tree-token tree)))
+    (message "%s('%s'" offset (if token (a3el-common-token-get-text token) "nil"))
+    (dolist (ea (a3el-common-tree-children tree))
+      (a3el-common-tree-pretty-print ea (+ (or indent 0) 2)))
+    (message "%s)" offset)
+    nil
+    ))
 
 
 (defun a3el-common-tree-dup-node (tree)
@@ -401,24 +412,24 @@
 
   ;; Return the i'th child of tree.
   (get-child 
-   #'(lambda (t i) 
-       (if t
-	   (nth i (a3el-common-tree-children t)))))
+   #'(lambda (tree i) 
+       (if tree
+	   (nth i (a3el-common-tree-children tree)))))
 
 
   ;; Return the count of tree's chidren.
   (get-child-count
-   #'(lambda (t) 
-       (if t
-	   (length (a3el-common-tree-children t))
+   #'(lambda (tree) 
+       (if tree
+	   (length (a3el-common-tree-children tree))
 	 0)))
 
 
   ;; Return tree's text. Returns the text of the common-tree's token.
   (get-text
-   #'(lambda (t)
-       (if t
-	   (a3el-common-token-get-text (a3el-common-tree-token t)))))
+   #'(lambda (tree)
+       (if tree
+	   (a3el-common-token-get-text (a3el-common-tree-token tree)))))
 
 
   ;; If oldRoot is a nil root, just copy or move the children to newRoot.
