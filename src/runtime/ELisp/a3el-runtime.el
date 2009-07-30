@@ -559,8 +559,87 @@
   special-state-transition
   )
 
+
+(defmacro a3el-predict-DFA (name is-lexer)
+  "From the input stream, predict what alternative will succeed
+   using this DFA (representing the covering regular approximation
+   to the underlying CFL).  Return an alternative number 1..n.  Signal
+   an exception upon error."
+  ;;(message "%S" (macroexpand '(a3el-predict-DFA puppy t)))
+  (let* ((lookup-form (if is-lexer
+			  `(gethash ',name (a3el-lexer-dfas (a3el-lexer-context-lexer context)))
+			`(gethash ',name (a3el-parser-dfas (a3el-parser-context-parser context)))))
+	 
+	 (input-consume (if is-lexer
+			    'a3el-lexer-input-consume
+			  'a3el-parser-input-consume))
+	 (input-mark (if is-lexer
+			 'a3el-lexer-input-mark
+		       'a3el-parser-input-mark))
+	 (input-rewind-to (if is-lexer
+			      'a3el-lexer-input-rewind-to
+			    'a3el-parser-input-rewind-to))
+	 (input-LA (if is-lexer
+		       'a3el-lexer-input-LA
+		     'a3el-parser-input-LA)))
+  
+    `(let* ((dfa ,lookup-form)
+	    (mark (,input-mark)))
+       (unwind-protect
+	   (catch 'return
+	     (let ((s 0))
+	       (while t
+		 (catch 'continue
+		   (let ((special-state (aref (a3el-DFA-special dfa) s)))
+		     (when (>= special-state 0)
+		       (setq s (funcall (a3el-DFA-special-state-transition dfa) special-state))
+		       (if  (= s -1)
+			   (progn
+			     (a3el-predict-DFA-no-viable-alt s (a3el-DFA-description dfa) ,is-lexer)
+			     (throw 'return 0)))
+		       (,input-consume)
+		       (throw 'continue nil))
+		     (when (>= (aref (a3el-DFA-accept dfa) s) 1)
+		       (throw 'return (aref (a3el-DFA-accept dfa) s)))
+		     (let ((c (,input-LA 1)))
+		       (when (and (>= c (aref (a3el-DFA-min dfa) s)) (<= c (aref (a3el-DFA-max dfa) s)))
+			 (let ((snext (aref (aref (a3el-DFA-transition dfa) s) (- c (aref (a3el-DFA-min dfa) s)) )))
+			   (when (< snext 0)
+			     (when (>= (aref (a3el-DFA-eot dfa) s) 0)
+			       (setq s (aref (a3el-DFA-eot dfa) s))
+			       (,input-consume)
+			       (throw 'continue nil))
+			     (a3el-predict-DFA-no-viable-alt s (a3el-DFA-description dfa) ,is-lexer)
+			     (throw 'return 0))
+			   (setq s snext)
+			   (,input-consume)
+			   (throw 'continue nil)))
+		       (when (>= (aref (a3el-DFA-eot dfa) s) 0)
+			 (setq s (aref (a3el-DFA-eot dfa) s))
+			 (,input-consume)
+			 (throw 'continue nil))
+		       (when (and (eq c *a3el-token-eof-token*) (>= (aref (a3el-DFA-eof dfa) s) 0))
+			 (throw 'return (aref (a3el-DFA-accept dfa) (aref (a3el-DFA-eof dfa) s))))
+		       (a3el-predict-DFA-no-viable-alt s (a3el-DFA-description dfa) ,is-lexer)
+		       (throw 'return 0)))))))
+	 (,input-rewind-to mark))
+       )))
+
+
+(defmacro a3el-predict-DFA-no-viable-alt (s description is-lexer)
+  "Helper for throwing no-viable-alt during prediction."
+  (if is-lexer
+      `(if (> (a3el-lexer-context-backtracking context) 0)
+	   (setf (a3el-lexer-context-failed context) t)
+	 (signal 'a3el-no-viable-alt description))
+
+    `(if (> (a3el-parser-context-backtracking context) 0)
+	 (setf (a3el-parser-context-failed context) t)
+       (signal 'a3el-no-viable-alt description))))
+
+
 (defmacro a3el-lexer-predict-DFA (name)
-  `(a3el-lexer-predict-DFA-with (gethash ',name (a3el-lexer-dfas (a3el-lexer-context-lexer context)))))
+  `(a3el-predict-DFA ,name t))
 
 (defmacro a3el-lexer-set-DFA (name value)
   "Install a newly instantiated DFA into the lexer (during lexer definition)."
@@ -568,7 +647,7 @@
 
 
 (defmacro a3el-parser-predict-DFA (name)
-  `(a3el-parser-predict-DFA-with (gethash ',name (a3el-parser-dfas (a3el-parser-context-parser context)))))
+  `(a3el-predict-DFA ,name nil))
 
 (defmacro a3el-parser-set-DFA (name value)
   "Install a newly instantiated DFA into the lexer (during lexer definition)."
@@ -588,11 +667,6 @@
        (fset (intern (concat "make-a3el-DFAstruct-" (format "%s" ',name)))
 	     #'(lambda ()
 		 (funcall ',name nil))))))
-
-
-
-
-
 
 
 
@@ -913,7 +987,7 @@
        (condition-case er
 	   (a3el-lexer-call-rule ,synpred-rule-name) ;; can never throw exception
 	 (a3el-re-error
-	  (throw er "Illegal state! synpreds cannot throw exceptions.")))
+	  (signal er "Illegal state! synpreds cannot throw exceptions.")))
        (setq success (not (a3el-lexer-context-failed context)))
        (a3el-lexer-input-rewind-to start)
        (decf (a3el-lexer-context-backtracking context))
@@ -933,45 +1007,6 @@
    to do sophisticated error recovery if you are in a fragment rule."
   (a3el-lexer-input-consume))
   
-
-(defun a3el-lexer-predict-DFA-with (dfa)
-  (let ((mark (a3el-lexer-input-mark)))
-    (unwind-protect
-	(catch 'return
-	  (let ((s 0))
-	    (while t
-	      (catch 'continue
-		(let ((special-state (aref (a3el-DFA-special dfa) s)))
-		  (when (>= special-state 0)
-		    (setq s (funcall (a3el-DFA-special-state-transition dfa) special-state))
-		    (a3el-lexer-input-consume)
-		    (throw 'continue nil))
-		  (when (>= (aref (a3el-DFA-accept dfa) s) 1)
-		    (throw 'return (aref (a3el-DFA-accept dfa) s)))
-		  (let ((c (a3el-lexer-input-LA 1)))
-		    (when (and (>= c (aref (a3el-DFA-min dfa) s)) (<= c (aref (a3el-DFA-max dfa) s)))
-		      (let ((snext (aref (aref (a3el-DFA-transition dfa) s) (- c (aref (a3el-DFA-min dfa) s)) )))
-			(when (< snext 0)
-			  (when (>= (aref (a3el-DFA-eot dfa) s) 0)
-			    (setq s (aref (a3el-DFA-eot dfa) s))
-			    (a3el-lexer-input-consume)
-			    (throw 'continue nil))
-			  (signal 'a3el-no-viable-alt (list s))
-			  (throw 'return 0))
-			(setq s snext)
-			(a3el-lexer-input-consume)
-			(throw 'continue nil)))
-		    (when (>= (aref (a3el-DFA-eot dfa) s) 0)
-		      (setq s (aref (a3el-DFA-eot dfa) s))
-		      (a3el-lexer-input-consume)
-		      (throw 'continue nil))
-		    (when (and (eq c *a3el-token-eof-token*) (>= (aref (a3el-DFA-eof dfa) s) 0))
-		      (throw 'return (aref (a3el-DFA-accept dfa) (aref (a3el-DFA-eof dfa) s))))
-		    (signal 'a3el-no-viable-alt (list s))
-		    (throw 'return 0)))))))
-      (a3el-lexer-input-rewind-to mark))
-    ))
-
 
 
 (defstruct a3el-bitset
@@ -1373,7 +1408,7 @@
        (condition-case er
 	   (a3el-parser-call-rule ,synpred-rule-name) ;; can never throw exception
 	 (a3el-re-error
-	  (throw er "Illegal state! synpreds cannot throw exceptions.")))
+	  (signal er "Illegal state! synpreds cannot throw exceptions.")))
        (setq success (not (a3el-parser-context-failed context)))
        (a3el-parser-input-rewind-to start)
        (decf (a3el-parser-context-backtracking context))
@@ -1461,43 +1496,7 @@
     ))
 
 
-(defun a3el-parser-predict-DFA-with (dfa)
-  (let ((mark (a3el-parser-input-mark)))
-    (unwind-protect
-	(catch 'return
-	  (let ((s 0))
-	    (while t
-	      (catch 'continue
-		(let ((special-state (aref (a3el-DFA-special dfa) s)))
-		  (when (>= special-state 0)
-		    (setq s (funcall (a3el-DFA-special-state-transition dfa) special-state))
-		    (a3el-parser-input-consume)
-		    (throw 'continue nil))
-		  (when (>= (aref (a3el-DFA-accept dfa) s) 1)
-		    (throw 'return (aref (a3el-DFA-accept dfa) s)))
-		  (let ((c (a3el-parser-input-LA 1)))
-		    (when (and (>= c (aref (a3el-DFA-min dfa) s)) (<= c (aref (a3el-DFA-max dfa) s)))
-		      (let ((snext (aref (aref (a3el-DFA-transition dfa) s) (- c (aref (a3el-DFA-min dfa) s)) )))
-			(when (< snext 0)
-			  (when (>= (aref (a3el-DFA-eot dfa) s) 0)
-			    (setq s (aref (a3el-DFA-eot dfa) s))
-			    (a3el-parser-input-consume)
-			    (throw 'continue nil))
-			  (signal 'a3el-no-viable-alt (list s))
-			  (throw 'return 0))
-			(setq s snext)
-			(a3el-parser-input-consume)
-			(throw 'continue nil)))
-		    (when (>= (aref (a3el-DFA-eot dfa) s) 0)
-		      (setq s (aref (a3el-DFA-eot dfa) s))
-		      (a3el-parser-input-consume)
-		      (throw 'continue nil))
-		    (when (and (eq c *a3el-token-eof-token*) (>= (aref (a3el-DFA-eof dfa) s) 0))
-		      (throw 'return (aref (a3el-DFA-accept dfa) (aref (a3el-DFA-eof dfa) s))))
-		    (signal 'a3el-no-viable-alt (list s))
-		    (throw 'return 0)))))))
-      (a3el-parser-input-rewind-to mark))
-    ))
+
 
 
 (defun a3el-display-recognition-error (re)

@@ -2,7 +2,6 @@ grammar css_elisp;
 
 options {
 	language=ELisp;
-	k=4;
 	output=AST;
 }
 
@@ -15,8 +14,7 @@ stylesheet
   : 
         (CHARSET_SYM STRING SEMI)?
         (WS|CDO|CDC)* (importCSS (WS|CDO|CDC)* )*
-        ((ruleset | media | page) (WS|CDO|CDC)* )*
-		EOF
+        ((ruleset | media | page) (WS|CDO|CDC)* )* EOF
     -> ^(STYLESHEET ruleset*)
   ;
 

@@ -32,7 +32,7 @@ def grammar_targets_for(src)
 end
 GRAMMARS.each{|g|
   grammar_targets_for(g).each{|t|
-    file t => [g] + [:prepare] + TEMPLATES do
+    file t => [g] + BUILD_DIRS + TEMPLATES do
       sh "java -cp #{JAVA_CLASSPATH.join(":")} org.antlr.Tool -o build #{g}"
     end    
   }
