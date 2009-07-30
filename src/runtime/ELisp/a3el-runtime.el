@@ -631,11 +631,11 @@
   (if is-lexer
       `(if (> (a3el-lexer-context-backtracking context) 0)
 	   (setf (a3el-lexer-context-failed context) t)
-	 (signal 'a3el-no-viable-alt description))
+	 (signal 'a3el-no-viable-alt ,description))
 
     `(if (> (a3el-parser-context-backtracking context) 0)
 	 (setf (a3el-parser-context-failed context) t)
-       (signal 'a3el-no-viable-alt description))))
+       (signal 'a3el-no-viable-alt ,description))))
 
 
 (defmacro a3el-lexer-predict-DFA (name)
