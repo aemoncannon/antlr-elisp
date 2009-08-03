@@ -1129,11 +1129,7 @@ notPredicate(pred) ::= "(not <evalPredicate(...)>)"
 evalPredicate(pred,description) ::= "<pred>"
 
 evalSynPredicate(pred,description) ::= <<
-  <if(!PARSER)>
-  (a3el-lexer-call-synpred <pred>_fragment)
-  <else>
-  (a3el-parser-call-synpred <pred>_fragment)
-  <endif>
+  (a3el-call-synpred <pred>_fragment)
 >>
 
 lookaheadTest(atom,k,atomAsInt) ::= "(= LA<decisionNumber>_<stateNumber> <atom>)"

@@ -49,10 +49,10 @@ group ASTParser;
 /** ID and output=AST */
 tokenRef(token,label,elementIndex,hetero) ::= <<
 <super.tokenRef(...)>
-<if(backtracking)>(if <actions.(actionScope).synpredgate> <endif>
+<if(backtracking)>(if <actions.(actionScope).synpredgate> (progn <endif>
 (setq <label>_tree <createNodeFromToken(...)>)
 (funcall adaptor-add-child root_0 <label>_tree)
-<if(backtracking)>)<endif>
+<if(backtracking)>))<endif>
 >>
 
 /** ID! and output=AST (same as plain tokenRef) */
@@ -61,10 +61,10 @@ tokenRefBang(token,label,elementIndex) ::= "<super.tokenRef(...)>"
 /** ID^ and output=AST */
 tokenRefRuleRoot(token,label,elementIndex,hetero) ::= <<
 <super.tokenRef(...)>
-<if(backtracking)>(if <actions.(actionScope).synpredgate> <endif>
+<if(backtracking)>(if <actions.(actionScope).synpredgate> (progn<endif>
 (setq <label>_tree <createNodeFromToken(...)>)
 (setq root_0 (funcall adaptor-become-root <label>_tree root_0))
-<if(backtracking)>)<endif>
+<if(backtracking)>))<endif>
 >>
 
 /** ids+=ID! and output=AST */
@@ -169,20 +169,20 @@ ruleRefRuleRootAndListLabel(rule,label,elementIndex,args,scope) ::= <<
 
 wildcard(label,elementIndex) ::= <<
 <super.wildcard(...)>
-<if(backtracking)>(if <actions.(actionScope).synpredgate><endif>
+<if(backtracking)>(if <actions.(actionScope).synpredgate>(progn <endif>
 (setq <label>_tree (funcall adaptor-create <label>))
 (funcall adaptor-add-child root_0 <label>_tree)
-<if(backtracking)>)<endif>
+<if(backtracking)>))<endif>
 >>
 
 wildcardBang(label,elementIndex) ::= "<super.wildcard(...)>"
 
 wildcardRuleRoot(label,elementIndex) ::= <<
 <super.wildcard(...)>
-<if(backtracking)>(if <actions.(actionScope).synpredgate><endif>
+<if(backtracking)>(if <actions.(actionScope).synpredgate> (progn <endif>
 (setq <label>_tree (funcall adaptor-create <label>))
 (setq root_0 (funcall adaptor-become-root <label>_tree root_0))
-<if(backtracking)>)<endif>
+<if(backtracking)>))<endif>
 >>
 
 createNodeFromToken(label,hetero) ::= <<
@@ -196,8 +196,8 @@ createNodeFromToken(label,hetero) ::= <<
 
 ruleCleanUp() ::= <<
 <super.ruleCleanUp()>
-<if(backtracking)>(if <actions.(actionScope).synpredgate><\n><endif>
+<if(backtracking)>(if <actions.(actionScope).synpredgate><\n>(progn <endif>
 (setf (a3el-retval-tree retval) (funcall adaptor-rule-post-processing root_0))
 (funcall adaptor-set-token-boundaries (a3el-retval-tree retval) (a3el-retval-start retval) (a3el-retval-stop retval))
-<if(backtracking)>)<endif>
+<if(backtracking)>))<endif>
 >>

@@ -63,6 +63,12 @@ task :css_perf => [:compile, :gen_parsers] do
   sh "emacs -batch -q -l test/css_stress_test.el"
 end
 
+# Byte compile the as3 lexer/parser and run it on a big as3 file.
+# Dump profiling data afterwards.
+task :as3_perf => [:compile, :gen_parsers] do
+  sh "emacs -batch -q -l test/as3_stress_test.el"
+end
+
 task :prepare => BUILD_DIRS + [RUNTIME_TARGET]
 
 task :clean => [] do

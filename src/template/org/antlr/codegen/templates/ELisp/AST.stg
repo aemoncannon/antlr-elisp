@@ -160,8 +160,10 @@ rewriteCode(
 ;; rule list labels: <referencedRuleListLabels; separator=", ">
 ;; wildcard labels: <[referencedWildcardLabels,referencedWildcardListLabels]; separator=", ">
 <if(backtracking)>
-(if <actions.(actionScope).synpredgate> <\n>
+(if <actions.(actionScope).synpredgate> <\n> 
+(progn
 <endif>
+
 (setf (a3el-retval-tree <prevRuleRootRef()>) root_0)
 <rewriteCodeLabels()>
 (setq root_0 (funcall adaptor-new-nil))
@@ -186,7 +188,7 @@ rewriteCode(
 <endif>
 <endif>
 <if(backtracking)>
-)
+))
 <endif>
 >>
 
@@ -279,10 +281,14 @@ rewriteAlt(a) ::= <<
 ;; <a.description>
 <if(a.pred)>
 (if (<a.pred>)
+    (progn
     <a.alt>
     )
+    )
 <else>
+    (progn
     <a.alt>
+    )
 <endif>
 >>
 

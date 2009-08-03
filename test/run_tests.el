@@ -88,8 +88,9 @@
 (load "error_recovery_test.el")
 (load "closures_test.el")
 (load "synpred_test.el")
-(load "css_test.el")
 (load "auto_ast_test.el")
 (load "ast_rewrite_test.el")
+(load "css_test.el")
+(load "as3_test.el")
 
 ;;; run_tests.el ends here

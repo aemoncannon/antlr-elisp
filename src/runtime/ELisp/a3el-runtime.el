@@ -979,21 +979,6 @@
 	   )))))
 
 
-(defmacro a3el-lexer-call-synpred (synpred-rule-name)
-  `(progn
-     (incf (a3el-lexer-context-backtracking context))
-     (let ((start (a3el-lexer-input-mark))
-	   (success nil))
-       (condition-case er
-	   (a3el-lexer-call-rule ,synpred-rule-name) ;; can never throw exception
-	 (a3el-re-error
-	  (signal er "Illegal state! synpreds cannot throw exceptions.")))
-       (setq success (not (a3el-lexer-context-failed context)))
-       (a3el-lexer-input-rewind-to start)
-       (decf (a3el-lexer-context-backtracking context))
-       (setf (a3el-lexer-context-failed context) nil)
-       success)))
-
 
 (defun a3el-lexer-report-error (re)
   (if (boundp '*a3el-swallowed-recogition-errors*)
@@ -1400,21 +1385,6 @@
 (defmacro a3el-parser-call-rule (name)
   `(funcall (gethash ',name (a3el-parser-rules (a3el-parser-context-parser context))) context))
 
-(defmacro a3el-parser-call-synpred (synpred-rule-name)
-  `(progn
-     (incf (a3el-parser-context-backtracking context))
-     (let ((start (a3el-parser-input-mark))
-	   (success nil))
-       (condition-case er
-	   (a3el-parser-call-rule ,synpred-rule-name) ;; can never throw exception
-	 (a3el-re-error
-	  (signal er "Illegal state! synpreds cannot throw exceptions.")))
-       (setq success (not (a3el-parser-context-failed context)))
-       (a3el-parser-input-rewind-to start)
-       (decf (a3el-parser-context-backtracking context))
-       (setf (a3el-parser-context-failed context) nil)
-       success)))
-
 
 (defun a3el-parser-report-error (re)
   "Report a recognition problem.
@@ -1496,6 +1466,46 @@
     ))
 
 
+(defmacro a3el-call-synpred (synpred-rule-name)
+  "Invoke a syntactic predicate rule by name. 
+   Bookmark the input stream before calling the rule, 
+   then rewind afterwards.
+
+   TODO: Currently we're checking parser vs lexer at runtime.
+   Need to choose at template instantiation time, but don't
+   know PARSER vs LEXER at all call-sites.."
+
+  `(cond
+
+    ((a3el-lexer-context-p context)
+     (progn
+       (incf (a3el-lexer-context-backtracking context))
+       (let ((start (a3el-lexer-input-mark))
+	     (success nil))
+	 (condition-case er
+	     (a3el-lexer-call-rule ,synpred-rule-name) ;; can never throw exception
+	   (a3el-re-error
+	    (signal er "Illegal state! synpreds cannot throw exceptions.")))
+	 (setq success (not (a3el-lexer-context-failed context)))
+	 (a3el-lexer-input-rewind-to start)
+	 (decf (a3el-lexer-context-backtracking context))
+	 (setf (a3el-lexer-context-failed context) nil)
+	 success)))
+
+    ((a3el-parser-context-p context)
+     (progn
+       (incf (a3el-parser-context-backtracking context))
+       (let ((start (a3el-parser-input-mark))
+	     (success nil))
+	 (condition-case er
+	     (a3el-parser-call-rule ,synpred-rule-name) ;; can never throw exception
+	   (a3el-re-error
+	    (signal er "Illegal state! synpreds cannot throw exceptions.")))
+	 (setq success (not (a3el-parser-context-failed context)))
+	 (a3el-parser-input-rewind-to start)
+	 (decf (a3el-parser-context-backtracking context))
+	 (setf (a3el-parser-context-failed context) nil)
+	 success)))))
 
 
 
