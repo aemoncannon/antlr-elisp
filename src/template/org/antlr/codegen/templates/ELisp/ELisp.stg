@@ -983,9 +983,9 @@ dfaEdgeSwitch(labels, targetState) ::= <<
 dfaDecision(decisionNumber,description) ::= <<
 (setq alt<decisionNumber> 
       <if(LEXER)>
-      (a3el-lexer-predict-DFA dfa<decisionNumber>)
+      (a3el-lexer-predict-DFA 'dfa<decisionNumber>)
       <else>
-      (a3el-parser-predict-DFA dfa<decisionNumber>)
+      (a3el-parser-predict-DFA 'dfa<decisionNumber>)
       <endif>
        )
 >>
@@ -1129,7 +1129,7 @@ notPredicate(pred) ::= "(not <evalPredicate(...)>)"
 evalPredicate(pred,description) ::= "<pred>"
 
 evalSynPredicate(pred,description) ::= <<
-  (a3el-call-synpred <pred>_fragment)
+  (a3el-call-synpred '<pred>_fragment)
 >>
 
 lookaheadTest(atom,k,atomAsInt) ::= "(= LA<decisionNumber>_<stateNumber> <atom>)"
