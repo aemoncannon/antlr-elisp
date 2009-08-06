@@ -674,8 +674,6 @@
 
 
 
-
-
 (defstruct a3el-lexer
   "An Antlr lexer"
   name
@@ -684,14 +682,6 @@
   (dfas (make-hash-table))
   (entry-func nil)
   )
-
-
-(defun a3el-lexer-predict-DFA (name)
-  (a3el-predict-DFA name t))
-
-(defmacro a3el-lexer-set-DFA (name value)
-  "Install a newly instantiated DFA into the lexer (during lexer definition)."
-  `(puthash ',name ,value (a3el-lexer-dfas current-lexer)))
 
 
 
@@ -730,6 +720,7 @@
   ;; The index of the character relative to the beginning of the line 0..n-1
   (char-position-in-line -1)
   )
+
 
 (defmacro a3el-lexer-context-pos () `(point))
 
@@ -972,6 +963,13 @@
 		)))
 	   )))))
 
+(defun a3el-lexer-predict-DFA (name)
+  (a3el-predict-DFA name t))
+
+(defmacro a3el-lexer-set-DFA (name value)
+  "Install a newly instantiated DFA into the lexer (during lexer definition)."
+  `(puthash ',name ,value (a3el-lexer-dfas current-lexer)))
+
 
 
 (defun a3el-lexer-report-error (re)
@@ -1083,15 +1081,6 @@
   (entry-func nil)
   (tree-adaptor (make-a3el-tree-adaptor))
   )
-
-
-(defun a3el-parser-predict-DFA (name)
-  (a3el-predict-DFA name nil))
-
-(defmacro a3el-parser-set-DFA (name value)
-  "Install a newly instantiated DFA into the lexer (during lexer definition)."
-  `(puthash ',name ,value (a3el-parser-dfas current-parser)))
-
 
 
 
@@ -1480,7 +1469,6 @@
    Need to choose at template instantiation time, but don't
    know PARSER vs LEXER at all call-sites.."
 
-
   (cond
    ((a3el-lexer-context-p context)
     (progn
@@ -1513,6 +1501,17 @@
 	(decf (a3el-parser-context-backtracking context))
 	(setf (a3el-parser-context-failed context) nil)
 	success)))))
+
+
+(defun a3el-parser-predict-DFA (name)
+  (a3el-predict-DFA name nil))
+
+(defmacro a3el-parser-set-DFA (name value)
+  "Install a newly instantiated DFA into the lexer (during lexer definition)."
+  `(puthash ',name ,value (a3el-parser-dfas current-parser)))
+
+
+
 
 
 
