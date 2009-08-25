@@ -49,24 +49,24 @@ task :gen_parsers => GRAMMARS.collect{|g| grammar_targets_for(g) }.flatten
 
 # Run elisp tests in batch mode.
 task :test => [:compile, :gen_parsers] do
-  sh "emacs -batch -q -l test/run_tests.el"
+  sh "emacs-snapshot -batch -q -l test/run_tests.el"
 end
 
 # Run elisp tests, in interactive emacs instance.
 task :itest => [:compile, :gen_parsers] do
-  sh "emacs -q -l test/run_tests.el"
+  sh "emacs-snapshot -q -l test/run_tests.el"
 end
 
 # Byte compile the css lexer/parser and run it on a big css file.
 # Dump profiling data afterwards.
 task :css_perf => [:compile, :gen_parsers] do
-  sh "emacs -batch -q -l test/css_stress_test.el"
+  sh "emacs-snapshot -batch -q -l test/css_stress_test.el"
 end
 
 # Byte compile the as3 lexer/parser and run it on a big as3 file.
 # Dump profiling data afterwards.
 task :as3_perf => [:compile, :gen_parsers] do
-  sh "emacs -batch -q -l test/as3_stress_test.el"
+  sh "emacs-snapshot -batch -q -l test/as3_stress_test.el"
 end
 
 task :prepare => BUILD_DIRS + [RUNTIME_TARGET]

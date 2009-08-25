@@ -135,7 +135,6 @@ genericParser(grammar, name, scopes, tokens, tokenNames, rules, numRules,
 
   (a3el-defparser <name>)
 
-
   (a3el-with-parser <name>
 
 

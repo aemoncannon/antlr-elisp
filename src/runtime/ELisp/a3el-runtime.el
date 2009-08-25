@@ -1507,7 +1507,7 @@
   (a3el-predict-DFA name nil))
 
 (defmacro a3el-parser-set-DFA (name value)
-  "Install a newly instantiated DFA into the lexer (during lexer definition)."
+  "Install a newly instantiated DFA into the parser (during parser definition)."
   `(puthash ',name ,value (a3el-parser-dfas current-parser)))
 
 
