@@ -10,6 +10,14 @@ TEMPLATES = FileList["src/template/**/*.stg"]
 RUNTIME_SRC = "src/runtime/ELisp/a3el-runtime.el"
 RUNTIME_TARGET = "build/runtime/a3el-runtime.el"
 
+def local_path_seps(path)
+  if PLATFORM =~ /win32/
+    path.gsub("/", "\\")
+  else
+    path.gsub("\\", "/")
+  end
+end
+
 
 BUILD_DIRS.each{|d| directory d }
 
@@ -31,10 +39,10 @@ def grammar_targets_for(src)
     ["build/test/grammars/#{$1}Lexer.java"]
   end
 end
-GRAMMARS.each{|g|
+GRAMMARS.each{|g| 
   grammar_targets_for(g).each{|t|
     file t => [g] + BUILD_DIRS + TEMPLATES do
-      sh "java -cp #{JAVA_CLASSPATH.join(CP_SEP)} org.antlr.Tool -o build #{g}"
+      sh "java -cp #{JAVA_CLASSPATH.join(CP_SEP)} org.antlr.Tool -o build #{local_path_seps(g)}"
     end    
   }
 }
