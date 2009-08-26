@@ -31,6 +31,7 @@
 (setq max-lisp-eval-depth 1000)
 (setq load-path (cons (expand-file-name "build/test/grammars") load-path))
 (setq load-path (cons (expand-file-name "build/runtime") load-path))
+(setq load-path (cons (expand-file-name "build") load-path))
 (setq load-path (cons (expand-file-name "test") load-path))
 
 (require 'a3el-runtime)

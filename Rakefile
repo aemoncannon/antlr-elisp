@@ -2,6 +2,7 @@ JAVA_CLASS_DIR = "build/classes"
 JAVA_UPTODATE = "#{JAVA_CLASS_DIR}/.uptodate"
 BUILD_DIRS = ["build", JAVA_CLASS_DIR, "build/test", "build/test/grammars", "build/runtime"]
 JAVA_CLASSPATH = FileList["lib/*.jar"] + ["lib", JAVA_CLASS_DIR, "src/template"]
+CP_SEP = PLATFORM =~ /win32/ ? ";" : ":"
 JAVA_SRCPATH = "src/java"
 JAVA_SOURCE_FILES = FileList["src/**/*.java"]
 GRAMMARS = FileList["test/grammars/*.g"]
@@ -19,7 +20,7 @@ end
 
 
 file JAVA_UPTODATE => [:prepare] + JAVA_SOURCE_FILES do
-  sh "javac -d #{JAVA_CLASS_DIR} -sourcepath #{JAVA_SRCPATH} -cp #{JAVA_CLASSPATH.join(":")} #{JAVA_SOURCE_FILES.join(" ")}"
+  sh "javac -d #{JAVA_CLASS_DIR} -sourcepath #{JAVA_SRCPATH} -cp #{JAVA_CLASSPATH.join(CP_SEP)} #{JAVA_SOURCE_FILES.join(" ")}"
   touch JAVA_UPTODATE
 end
 
@@ -33,7 +34,7 @@ end
 GRAMMARS.each{|g|
   grammar_targets_for(g).each{|t|
     file t => [g] + BUILD_DIRS + TEMPLATES do
-      sh "java -cp #{JAVA_CLASSPATH.join(":")} org.antlr.Tool -o build #{g}"
+      sh "java -cp #{JAVA_CLASSPATH.join(CP_SEP)} org.antlr.Tool -o build #{g}"
     end    
   }
 }
