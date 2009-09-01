@@ -133,10 +133,13 @@ genericParser(grammar, name, scopes, tokens, tokenNames, rules, numRules,
               ASTLabelType="Object", labelType, members, rewriteElementType, 
 	      filterMode) ::= <<
 
-   (a3el-defparser '<name>)
+  (a3el-defparser <name>)
+
+  (a3el-with-parser <name>
+
 
     ;; Define entry function for this parser. Sets up dynamic environment.
-   (setf (a3el-parser-entry-func (a3el-get-parser '<name>)) #'(lambda (context name)
+   (setf (a3el-parser-entry-func current-parser) #'(lambda (context name)
     (let* (
         (current-lexer (a3el-lexer-context-lexer (a3el-parser-context-input context)))
         (current-parser (a3el-parser-context-parser context))
@@ -160,11 +163,12 @@ genericParser(grammar, name, scopes, tokens, tokenNames, rules, numRules,
        (funcall rule-func context))))
 
 
-    (a3el-parser-init-token-names (a3el-get-parser '<name>) "\<invalid>" "\<EOR>" "\<DOWN>" "\<UP>" <tokenNames; separator=" ">)
+    (a3el-parser-init-token-names "\<invalid>" "\<EOR>" "\<DOWN>" "\<UP>" <tokenNames; separator=" ">)
 
     <tokens:{(a3el-deftoken <it.name> <it.type>)}; separator="\n">
 
     ;; FIXME Delegates stuff
+
 
     <scopes:{<if(it.isDynamicGlobalScope)><globalAttributeScope(scope=it)><endif>}; separator="\n">
 
