@@ -1,3 +1,5 @@
+
+
 (setq debug-on-error t)
 (setq max-specpdl-size 5000)
 (setq max-lisp-eval-depth 1000)
@@ -14,23 +16,26 @@
 (load "as3_elispParser")
 
 
-(find-file "test/data/ApolloApplication.as3")
+(find-file "test/data/BasicObservable.as")
 (elp-instrument-package "a3el")
 
-(message "\n")
-(dotimes (i 3)
-  (message "Run #%s...." i)
-  (a3el-parse-buffer 'as3_elispLexer 'as3_elispParser 'compilationUnit (current-buffer)))
-(message "\n")
+(unwind-protect
+    (progn
+      (message "\n")
+      (dotimes (i 3)
+	(message "Run #%s...." i)
+	(a3el-parse-buffer 'as3_elispLexer 'as3_elispParser 'compilationUnit (current-buffer)))
+      (message "\n")
 
-(elp-results)
-(kill-buffer nil)
+      (elp-results)
+      (kill-buffer nil)
+      )
 
-
-;; Clean all these up
-(delete-file (expand-file-name "build/runtime/a3el-runtime.elc"))
-(delete-file (expand-file-name "build/test/grammars/as3_elispParser.elc"))
-(delete-file (expand-file-name "build/test/grammars/as3_elispLexer.elc"))
+  ;; Clean all these up
+  (message "Cleaning up..")
+  (delete-file (expand-file-name "build/runtime/a3el-runtime.elc"))
+  (delete-file (expand-file-name "build/test/grammars/as3_elispParser.elc"))
+  (delete-file (expand-file-name "build/test/grammars/as3_elispLexer.elc")))
 
 (message "Done!")
 

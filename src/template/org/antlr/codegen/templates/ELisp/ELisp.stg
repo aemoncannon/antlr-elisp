@@ -71,7 +71,7 @@ lexer(grammar, name, tokens, scopes, rules, numRules, labelType="Token",
  (a3el-with-lexer <name>
 
     ;; Define entry function for this lexer. Sets up dynamic environment.
-   (setf (a3el-lexer-entry-func current-lexer) #'(lambda (context name)
+   (setf (a3el-lexer-entry-func current-lexer) (lambda (context name)
     (let* (
     	(current-buffer (a3el-lexer-context-input context))
     	(current-lexer (a3el-lexer-context-lexer context))
@@ -139,7 +139,7 @@ genericParser(grammar, name, scopes, tokens, tokenNames, rules, numRules,
 
 
     ;; Define entry function for this parser. Sets up dynamic environment.
-   (setf (a3el-parser-entry-func current-parser) #'(lambda (context name)
+   (setf (a3el-parser-entry-func current-parser) (lambda (context name)
     (let* (
         (current-lexer (a3el-lexer-context-lexer (a3el-parser-context-input context)))
         (current-parser (a3el-parser-context-parser context))
@@ -172,7 +172,9 @@ genericParser(grammar, name, scopes, tokens, tokenNames, rules, numRules,
 
     <scopes:{<if(it.isDynamicGlobalScope)><globalAttributeScope(scope=it)><endif>}; separator="\n">
 
-    <bitsets:{(a3el-parser-bitset FOLLOW_<it.name>_in_<it.inName><it.tokenIndex> <bitsetBitsLiteral(it.bits)>)}; separator="\n">
+    (a3el-do-in-thunk
+    <bitsets:{(a3el-parser-bitset FOLLOW_<it.name>_in_<it.inName><it.tokenIndex> <bitsetBitsLiteral(it.bits)>)}; separator="\n">)
+
 
     <@members>
     (a3el-parser-initialization
@@ -186,7 +188,9 @@ genericParser(grammar, name, scopes, tokens, tokenNames, rules, numRules,
 
     <rules; separator="\n\n">
 
-    <cyclicDFAs:cyclicDFA()> <! dump tables for all DFA !>
+    (a3el-do-in-thunk
+    <cyclicDFAs:cyclicDFA()> <! dump tables for all DFA !>)
+
     <cyclicDFAs:{dfa | (a3el-parser-set-DFA dfa<dfa.decisionNumber> (make-a3el-DFAstruct-DFA<dfa.decisionNumber>))}; separator="\n">
 )
 >>
@@ -1034,7 +1038,7 @@ cyclicDFA(dfa) ::= <<
   :description "<dfa.description>"
   <@errorMethod()>
   <if(dfa.specialStateSTs)>
-  :special-state-transition #'(lambda (s)
+  :special-state-transition (lambda (s)
   (catch 'return
      (let ((s-original s))
         (a3el-alt-case s

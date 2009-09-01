@@ -1572,5 +1572,17 @@
        ,@body)))
 
 
+(defmacro a3el-do-in-thunk (&rest body)
+  "Does not change the meaning of body, but lifts it into a thunk which
+   will be compiled into a separate chunk of bytecode, therebye sidestepping
+   a bytecode overflow issue.
+   See: http://emacsbugs.donarmstrong.com/cgi-bin/bugreport.cgi?bug=4251"
+  ;; (macroexpand '(a3el-do-in-thunk 1 2 3))
+  (let ((thunk-name (gensym "thunk")))
+    `(progn
+       (setq ,thunk-name (lambda () ,@body))
+       (funcall ,thunk-name))))
+
+
 (provide 'a3el-runtime)
 ;;; a3el-runtime.el ends here
