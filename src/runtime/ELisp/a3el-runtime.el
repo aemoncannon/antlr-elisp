@@ -567,8 +567,8 @@
    an exception upon error."
   ;;(message "%S" (macroexpand '(a3el-predict-DFA puppy t)))
   (let* ((lookup-form (if is-lexer
-			  `(gethash ',name (a3el-lexer-dfas (a3el-lexer-context-lexer context)))
-			`(gethash ',name (a3el-parser-dfas (a3el-parser-context-parser context)))))
+			  `(gethash ,name (a3el-lexer-dfas (a3el-lexer-context-lexer context)))
+			`(gethash ,name (a3el-parser-dfas (a3el-parser-context-parser context)))))
 	 
 	 (input-consume (if is-lexer
 			    'a3el-lexer-input-consume
@@ -638,24 +638,10 @@
        (signal 'a3el-no-viable-alt ,description))))
 
 
-(defmacro a3el-lexer-predict-DFA (name)
-  `(a3el-predict-DFA ,name t))
-
-(defmacro a3el-lexer-set-DFA (name value)
-  "Install a newly instantiated DFA into the lexer (during lexer definition)."
-  `(puthash ',name ,value (a3el-lexer-dfas current-lexer)))
-
-
-(defmacro a3el-parser-predict-DFA (name)
-  `(a3el-predict-DFA ,name nil))
-
-(defmacro a3el-parser-set-DFA (name value)
-  "Install a newly instantiated DFA into the lexer (during lexer definition)."
-  `(puthash ',name ,value (a3el-parser-dfas current-parser)))
-
 
 (defmacro a3el-defDFAstruct (name &rest defaults)
   "Define a custom DFA creation function"
+
   `(progn 
      (fset ',name
 	   #'(lambda (reco)
@@ -688,8 +674,6 @@
 
 
 
-
-
 (defstruct a3el-lexer
   "An Antlr lexer"
   name
@@ -698,7 +682,6 @@
   (dfas (make-hash-table))
   (entry-func nil)
   )
-
 
 
 
@@ -737,6 +720,7 @@
   ;; The index of the character relative to the beginning of the line 0..n-1
   (char-position-in-line -1)
   )
+
 
 (defmacro a3el-lexer-context-pos () `(point))
 
@@ -950,6 +934,7 @@
 (defmacro a3el-lexer-each-buffer-token (token-sym body)
   "Execute body with token-sym bound to each token in the buffer in sequence.
    We assume context is bound to an active lexer context."
+
   `(let ((lexer-entry-func (a3el-lexer-entry-func (a3el-lexer-context-lexer context))))
      (save-excursion
        (with-current-buffer (a3el-lexer-context-input context)
@@ -977,6 +962,13 @@
 		(a3el-lexer-recover re)
 		)))
 	   )))))
+
+(defun a3el-lexer-predict-DFA (name)
+  (a3el-predict-DFA name t))
+
+(defmacro a3el-lexer-set-DFA (name value)
+  "Install a newly instantiated DFA into the lexer (during lexer definition)."
+  `(puthash ',name ,value (a3el-lexer-dfas current-lexer)))
 
 
 
@@ -1089,6 +1081,7 @@
   (entry-func nil)
   (tree-adaptor (make-a3el-tree-adaptor))
   )
+
 
 
 (defstruct a3el-parser-context
@@ -1218,6 +1211,7 @@
   here and bail out of the current production to the normal error
   exception catch (at the end of the method) by just throwing
   MismatchedTokenException upon input.LA(1)!=ttype."
+
   (let ((LT_1 (a3el-parser-input-LT 1)))
     (cond 
      ((= (a3el-common-token-type LT_1) ttype)
@@ -1466,7 +1460,7 @@
     ))
 
 
-(defmacro a3el-call-synpred (synpred-rule-name)
+(defun a3el-call-synpred (synpred-rule-name)
   "Invoke a syntactic predicate rule by name. 
    Bookmark the input stream before calling the rule, 
    then rewind afterwards.
@@ -1475,37 +1469,49 @@
    Need to choose at template instantiation time, but don't
    know PARSER vs LEXER at all call-sites.."
 
-  `(cond
+  (cond
+   ((a3el-lexer-context-p context)
+    (progn
+      (incf (a3el-lexer-context-backtracking context))
+      (let ((start (a3el-lexer-input-mark))
+	    (success nil))
+	(condition-case er
+	    ;;Can never throw exception
+	    (funcall (gethash synpred-rule-name (a3el-lexer-rules (a3el-lexer-context-lexer context))) context)
+	  (a3el-re-error
+	   (signal er "Illegal state! synpreds cannot throw exceptions.")))
+	(setq success (not (a3el-lexer-context-failed context)))
+	(a3el-lexer-input-rewind-to start)
+	(decf (a3el-lexer-context-backtracking context))
+	(setf (a3el-lexer-context-failed context) nil)
+	success)))
 
-    ((a3el-lexer-context-p context)
-     (progn
-       (incf (a3el-lexer-context-backtracking context))
-       (let ((start (a3el-lexer-input-mark))
-	     (success nil))
-	 (condition-case er
-	     (a3el-lexer-call-rule ,synpred-rule-name) ;; can never throw exception
-	   (a3el-re-error
-	    (signal er "Illegal state! synpreds cannot throw exceptions.")))
-	 (setq success (not (a3el-lexer-context-failed context)))
-	 (a3el-lexer-input-rewind-to start)
-	 (decf (a3el-lexer-context-backtracking context))
-	 (setf (a3el-lexer-context-failed context) nil)
-	 success)))
+   ((a3el-parser-context-p context)
+    (progn
+      (incf (a3el-parser-context-backtracking context))
+      (let ((start (a3el-parser-input-mark))
+	    (success nil))
+	(condition-case er
+	    ;;Can never throw exception
+	    (funcall (gethash synpred-rule-name (a3el-parser-rules (a3el-parser-context-parser context))) context)
+	  (a3el-re-error
+	   (signal er "Illegal state! synpreds cannot throw exceptions.")))
+	(setq success (not (a3el-parser-context-failed context)))
+	(a3el-parser-input-rewind-to start)
+	(decf (a3el-parser-context-backtracking context))
+	(setf (a3el-parser-context-failed context) nil)
+	success)))))
 
-    ((a3el-parser-context-p context)
-     (progn
-       (incf (a3el-parser-context-backtracking context))
-       (let ((start (a3el-parser-input-mark))
-	     (success nil))
-	 (condition-case er
-	     (a3el-parser-call-rule ,synpred-rule-name) ;; can never throw exception
-	   (a3el-re-error
-	    (signal er "Illegal state! synpreds cannot throw exceptions.")))
-	 (setq success (not (a3el-parser-context-failed context)))
-	 (a3el-parser-input-rewind-to start)
-	 (decf (a3el-parser-context-backtracking context))
-	 (setf (a3el-parser-context-failed context) nil)
-	 success)))))
+
+(defun a3el-parser-predict-DFA (name)
+  (a3el-predict-DFA name nil))
+
+(defmacro a3el-parser-set-DFA (name value)
+  "Install a newly instantiated DFA into the parser (during parser definition)."
+  `(puthash ',name ,value (a3el-parser-dfas current-parser)))
+
+
+
 
 
 
@@ -1564,6 +1570,18 @@
 	(setq bindings (append bindings `((,var-name nil))))))
     `(let (,@bindings)
        ,@body)))
+
+
+(defmacro a3el-do-in-thunk (&rest body)
+  "Does not change the meaning of body, but lifts it into a thunk which
+   will be compiled into a separate chunk of bytecode, therebye sidestepping
+   a bytecode overflow issue.
+   See: http://emacsbugs.donarmstrong.com/cgi-bin/bugreport.cgi?bug=4251"
+  ;; (macroexpand '(a3el-do-in-thunk 1 2 3))
+  (let ((thunk-name (gensym "thunk")))
+    `(progn
+       (setq ,thunk-name (lambda () ,@body))
+       (funcall ,thunk-name))))
 
 
 (provide 'a3el-runtime)
