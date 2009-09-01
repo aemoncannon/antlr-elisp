@@ -1106,8 +1106,11 @@
      (let ((current-parser (gethash ',name *a3el-runtime-parsers*)))
        ,@body)))
 
-(defun a3el-parser-init-token-names (&rest names)
-  (setf (a3el-parser-token-names current-parser) names))
+(defun a3el-get-parser (name)
+  (gethash name *a3el-runtime-parsers*))
+
+(defun a3el-parser-init-token-names (parser &rest names)
+  (setf (a3el-parser-token-names parser) names))
 
 (defmacro a3el-parser-initialization (&rest body))
 
@@ -1116,10 +1119,8 @@
 	    (make-a3el-bitset :bits ,bitsets)
 	    (a3el-parser-bitsets current-parser)))
 
-(defmacro a3el-defparser (name)
-  `(puthash ',name 
-	    (make-a3el-parser :name ',name)
-	    *a3el-runtime-parsers*))
+(defun a3el-defparser (name)
+  (puthash name (make-a3el-parser :name name) *a3el-runtime-parsers*))
 
 (defmacro a3el-parser-input-mark ()
   `(progn
