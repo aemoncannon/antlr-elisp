@@ -1,8 +1,6 @@
-
-
 (setq debug-on-error t)
 (setq max-specpdl-size 5000)
-(setq max-lisp-eval-depth 1000)
+(setq max-lisp-eval-depth 5000)
 (setq load-path (cons (expand-file-name "build/test/grammars") load-path))
 (setq load-path (cons (expand-file-name "build/runtime") load-path))
 (setq load-path (cons (expand-file-name "test") load-path))
@@ -35,7 +33,8 @@
   (message "Cleaning up..")
   (delete-file (expand-file-name "build/runtime/a3el-runtime.elc"))
   (delete-file (expand-file-name "build/test/grammars/as3_elispParser.elc"))
-  (delete-file (expand-file-name "build/test/grammars/as3_elispLexer.elc")))
+  (delete-file (expand-file-name "build/test/grammars/as3_elispLexer.elc"))
+)
 
 (message "Done!")
 

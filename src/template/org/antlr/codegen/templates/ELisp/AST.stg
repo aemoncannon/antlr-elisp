@@ -195,38 +195,50 @@ rewriteCode(
 rewriteCodeLabels() ::= <<
 <referencedTokenLabels
     :{ (setq stream_<it> (let ((s (make-a3el-rewrite-token-stream :adaptor adaptor :element-description "token <it>")))
-                     (a3el-rewrite-stream-add s <it>)))
+                     (a3el-rewrite-stream-add s <it>) 
+		     s
+		     ))
       };
     separator="\n"
 >
 <referencedTokenListLabels
     :{ (setq stream_<it> (let ((s (make-a3el-rewrite-token-stream :adaptor adaptor :element-description "token <it>")))
-                     (setf (a3el-rewrite-stream-elements s) list_<it>)))
+                     (setf (a3el-rewrite-stream-elements s) list_<it>)
+		     s
+		     ))
       };
     separator="\n"
 >
 
 <referencedWildcardLabels
     :{ (setq stream_<it> (let ((s (make-a3el-rewrite-subtree-stream :adaptor adaptor :element-description "wildcard <it>")))
-       	     	     (a3el-rewrite-stream-add s <it>)))
+       	     	     (a3el-rewrite-stream-add s <it>)
+		     s
+		     ))
       };
     separator="\n"
 >
 <referencedWildcardListLabels
     :{ (setq stream_<it> (let ((s (make-a3el-rewrite-subtree-stream :adaptor adaptor :element-description "wildcard <it>")))
-                     (setf (a3el-rewrite-stream-elements s) list_<it>)))
+                     (setf (a3el-rewrite-stream-elements s) list_<it>)
+		     s
+		     ))
       };
     separator="\n"
 >
 <referencedRuleLabels
     :{ (setq stream_<it> (let ((s (make-a3el-rewrite-subtree-stream :adaptor adaptor :element-description "rule <it>")))
-                     (a3el-rewrite-stream-add s (if (null <it>) nil (a3el-retval-tree <it>)))))
+                     (a3el-rewrite-stream-add s (if (null <it>) nil (a3el-retval-tree <it>)))
+		     s
+		     ))
       };
     separator="\n"
 >
 <referencedRuleListLabels
     :{ (setq stream_<it> (let ((s (make-a3el-rewrite-subtree-stream :adaptor adaptor :element-description "token <it>")))
-                     (setf (a3el-rewrite-stream-elements s) list_<it>)))
+                     (setf (a3el-rewrite-stream-elements s) list_<it>)
+		     s
+		     ))
       };
     separator="\n"
 >
